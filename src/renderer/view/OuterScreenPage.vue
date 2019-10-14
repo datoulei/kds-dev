@@ -4,7 +4,7 @@
       <div class="card" :style="{'height':card1Height+'px'}">
         <div class="header">
           <span style="margin-left:12px;">
-            <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="current">
+            <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="[0]">
               <a-menu-item v-for="item in menuList1" :key="item.id" @click="checkType(item,1)">
                 <div class="item">{{ item.name}}</div>
               </a-menu-item>
@@ -31,7 +31,7 @@
       <div class="card" :style="{'height':card23Height+'px'}">
         <div class="header">
           <span style="margin-left:12px;">
-            <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="current">
+            <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="[0]">
               <a-menu-item v-for="item in menuList2" :key="item.id" @click="checkType(item,2)">
                 <div class="item">{{ item.name}}</div>
               </a-menu-item>
@@ -48,13 +48,15 @@
             :food="foo"
             :width="width"
             :overTime="overTime"
+            :showRemark="showRemark"
+            @click.native="doneDish(foo)"
           />
         </div>
       </div>
       <div class="card card-3" :style="{'height':card23Height+'px'}">
         <div class="header">
           <span style="margin-left:12px;">
-            <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="current">
+            <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="[0]">
               <a-menu-item v-for="item in menuList3" :key="item.id" @click="checkType(item,3)">
                 <div class="item">{{ item.name}}</div>
               </a-menu-item>
@@ -71,6 +73,8 @@
             :food="foo"
             :width="width"
             :overTime="overTime"
+            :showRemark="showRemark"
+            @click.native="doneDish(foo)"
           />
         </div>
       </div>
@@ -85,7 +89,27 @@ export default {
   sockets: {
     // 新菜
     'create-order'(data) {
-      console.log('create-order => ', data);
+      console.log('推送菜品 => ', data);
+
+      const categoryId = data.Dish.categoryId;
+      const list = this.orderList.map(item => Object.assign([], item));
+      console.log('LIST:', list);
+      if (this.categories2.includes(categoryId)) {
+        list[1].dishes.push(data);
+      } else if (this.categories3.includes(categoryId)) {
+        list[2].dishes.push(data);
+      } else {
+        list[0].dishes.push(data);
+      }
+      this.$store.commit('SET_ORDER_LIST', list);
+    },
+    // 撤单
+    'return-order'(data) {
+      console.log('取消菜品 => ', data);
+      this.GetOrderList().then(rst => {
+        this.$store.commit('SET_ORDER_LIST', rst);
+        ipcRenderer.send('orderList', rst);
+      });
     },
     'done-dish-confirm'(data) {
       if (data.code === 0) {
@@ -109,12 +133,14 @@ export default {
 
   data() {
     return {
-      overTime: {},
-      current: [0],
-      category1: 0,
-      category2: 0,
-      category3: 0,
-      sort1: 'asc',
+      overTime: {}, // 超时数据
+      categories1: [], // 区域1类别数组
+      categories2: [], // 区域2类别数组
+      categories3: [], // 区域3类别数组
+      currentCategory1: 0, // 区域1选中的数组
+      currentCategory2: 0, // 区域2选中的数组
+      currentCategory3: 0, // 区域3选中的数组
+      sort1: 'asc', // 排序
       sort2: 'asc',
       sort3: 'asc'
     };
@@ -124,8 +150,20 @@ export default {
   },
   created() {
     this.GetOrderList().then(rst => {
-      // 菜单分类
+      if (rst && rst.length > 0) {
+        rst[0].categories.map(category => {
+          this.categories1.push(category.id);
+        });
+        rst[1].categories.map(category => {
+          this.categories2.push(category.id);
+        });
+        rst[2].categories.map(category => {
+          this.categories3.push(category.id);
+        });
+      }
+
       this.$store.commit('SET_ORDER_LIST', rst);
+      // 就绪
       ipcRenderer.send('complete', rst, '', 'outer');
     });
 
@@ -164,22 +202,24 @@ export default {
       if (Array.isArray(this.orderList) && this.orderList.length > 0) {
         // 未划菜
         if (this.type === 0) {
-          if (this.category1 === 0) {
+          if (this.currentCategory1 === 0) {
             // 全部
             return this.orderList[0].dishes.filter(item => !item.isDone);
           } else {
             return this.orderList[0].dishes.filter(
-              item => !item.isDone && item.Dish.categoryId === this.category1
+              item =>
+                !item.isDone && item.Dish.categoryId === this.currentCategory1
             );
           }
         } else {
           // 划菜
-          if (this.category1 === 0) {
+          if (this.currentCategory1 === 0) {
             // 全部
             return this.orderList[0].dishes.filter(item => item.isDone);
           } else {
             return this.orderList[0].dishes.filter(
-              item => item.isDone && item.Dish.categoryId === this.category1
+              item =>
+                item.isDone && item.Dish.categoryId === this.currentCategory1
             );
           }
         }
@@ -192,22 +232,24 @@ export default {
       if (Array.isArray(this.orderList) && this.orderList.length > 0) {
         // 未划菜
         if (this.type === 0) {
-          if (this.category2 === 0) {
+          if (this.currentCategory2 === 0) {
             // 全部
             return this.orderList[1].dishes.filter(item => !item.isDone);
           } else {
             return this.orderList[1].dishes.filter(
-              item => !item.isDone && item.Dish.categoryId === this.category2
+              item =>
+                !item.isDone && item.Dish.categoryId === this.currentCategory2
             );
           }
         } else {
           // 划菜
-          if (this.category2 === 0) {
+          if (this.currentCategory2 === 0) {
             // 全部
             return this.orderList[1].dishes.filter(item => item.isDone);
           } else {
             return this.orderList[1].dishes.filter(
-              item => item.isDone && item.Dish.categoryId === this.category2
+              item =>
+                item.isDone && item.Dish.categoryId === this.currentCategory2
             );
           }
         }
@@ -220,22 +262,24 @@ export default {
       if (Array.isArray(this.orderList) && this.orderList.length > 0) {
         // 未划菜
         if (this.type === 0) {
-          if (this.category2 === 0) {
+          if (this.currentCategory2 === 0) {
             // 全部
             return this.orderList[2].dishes.filter(item => !item.isDone);
           } else {
             return this.orderList[2].dishes.filter(
-              item => !item.isDone && item.Dish.categoryId === this.category2
+              item =>
+                !item.isDone && item.Dish.categoryId === this.currentCategory2
             );
           }
         } else {
           // 划菜
-          if (this.category2 === 0) {
+          if (this.currentCategory2 === 0) {
             // 全部
             return this.orderList[2].dishes.filter(item => item.isDone);
           } else {
             return this.orderList[2].dishes.filter(
-              item => item.isDone && item.Dish.categoryId === this.category2
+              item =>
+                item.isDone && item.Dish.categoryId === this.currentCategory2
             );
           }
         }
@@ -257,7 +301,7 @@ export default {
 
     dish2() {
       let dishList = _.sortBy(this.orderList2, item => {
-        if (this.sort1 === 'asc') {
+        if (this.sort2 === 'asc') {
           return new Date(item.createdAt).getTime();
         } else {
           return -new Date(item.createdAt).getTime();
@@ -268,7 +312,7 @@ export default {
 
     dish3() {
       let dishList = _.sortBy(this.orderList3, item => {
-        if (this.sort1 === 'asc') {
+        if (this.sort3 === 'asc') {
           return new Date(item.createdAt).getTime();
         } else {
           return -new Date(item.createdAt).getTime();
@@ -340,11 +384,11 @@ export default {
     // 点击分类
     checkType(data, dish) {
       if (dish === 1) {
-        this.category1 = data.id;
+        this.currentCategory1 = data.id;
       } else if (dish === 2) {
-        this.category2 = data.id;
+        this.currentCategory2 = data.id;
       } else if (dish === 3) {
-        this.category3 = data.id;
+        this.currentCategory3 = data.id;
       }
     },
 
