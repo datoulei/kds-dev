@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.bootcss.com/vue/2.2.2/vue.min.js"></script>
+    <title>打印</title>
+    <style>
+        @page {
+            margin: 0;
+            /* size: 95mm 130mm; */
+        }
+
+        body {
+            background-size: cover;
+            margin: 0;
+        }
+
+        .page {
+            overflow: hidden;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 1);
+            /** 阴影 */
+            box-shadow: 0px 6px 14px 0px rgba(0, 0, 0, 0.05);
+            position: relative;
+            background-size: 100% 100%;
+            /* background-image: url("http://uniecloud-turtle.oss-cn-hongkong.aliyuncs.com/card_bg.jpg"); */
+        }
+
+        .app {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div id='app' class="app">
+        <div class="page" :style="{width:page.pageWidth+'px',height:page.pageHeight+'px'}">
+            <!-- <img src="http://uniecloud-turtle.oss-cn-hongkong.aliyuncs.com/card_bg.jpg"
+                style="position: absolute;top:0;left: 0; width: 100%;height: 100%;z-index:1;" /> -->
+
+            <div v-for="item in elements" v-bind:style="{
+                    position:'absolute',
+                    top:item.y+'px',
+                    left:item.x+'px',
+                    height:item.h+'px',
+                    width:item.w+'px',
+                    'text-align':item.align,
+                    'font-size':item.fontSize + 'px',
+                    'z-index':999,
+                }">
+                <template v-if="['qrcode','avatar'].includes(item.type)">
+                    <img style="width:100%;height:100%" :src="item.value" />
+                </template>
+                <template v-else>
+                    <span>{{ item.value }}</span>
+                </template>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    //引入ipcRenderer对象
+    const { ipcRenderer } = require('electron')
+    new Vue({
+        el: "#app",
+        data: {
+            page: {},
+            elements: []
+        },
+        mounted() {
+            ipcRenderer.on('ping', (e, arr) => { //接收响应
+                console.log("TCL ->接受响应 ping:" + arr)
+                this.page = arr[0].template.page;
+                this.elements = arr[0].template.elements;
+                ipcRenderer.sendToHost('pong') //向webview所在页面的进程传达消息s
+                console.log("TCL ->接收结束 pong")
+            })
+        },
+        methods: {}
+    })
+</script>
+
+</html>
