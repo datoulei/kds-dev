@@ -89,6 +89,7 @@ export default {
     },
     'done-dish-confirm'(data) {
       if (data.code === 0) {
+        this.$message.success('划菜成功', 0.5);
         this.GetOrderList().then(rst => {
           this.$store.commit('SET_ORDER_LIST', rst);
           ipcRenderer.send('orderList', rst);
@@ -97,6 +98,7 @@ export default {
     },
     'undo-dish-confirm'(data) {
       if (data.code === 0) {
+        this.$message.success('撤销成功', 0.5);
         this.GetOrderList().then(rst => {
           this.$store.commit('SET_ORDER_LIST', rst);
           ipcRenderer.send('orderList', rst);
