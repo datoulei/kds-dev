@@ -90,10 +90,8 @@ export default {
     // 新菜
     'create-order'(data) {
       console.log('推送菜品 => ', data);
-
       const categoryId = data.Dish.categoryId;
       const list = this.orderList.map(item => Object.assign([], item));
-      console.log('LIST:', list);
       if (this.categories2.includes(categoryId)) {
         list[1].dishes.push(data);
       } else if (this.categories3.includes(categoryId)) {
