@@ -85,6 +85,7 @@
 import { ipcRenderer } from 'electron';
 import Food from '@/components/Desk/Food-1.vue';
 import _ from 'lodash';
+import mysql from 'mysql';
 export default {
   sockets: {
     // 新菜
@@ -147,6 +148,31 @@ export default {
     'v-food': Food
   },
   created() {
+    // mysql
+    var connection = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: '123456',
+      database: 'mhwz'
+    });
+
+    connection.connect(err => {
+      if (err) {
+        console.log(err.code);
+        console.log(err.fatal);
+      } else {
+        console.log('connect successful');
+        const sql = 'select * from t_user';
+        connection.query(sql, function(err, rows, fields) {
+          if (err) {
+            console.log('查询错误');
+          } else {
+            console.log(rows);
+          }
+        });
+      }
+    });
+
     this.GetOrderList().then(rst => {
       if (rst && rst.length > 0) {
         rst[0].categories.map(category => {

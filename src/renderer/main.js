@@ -11,8 +11,9 @@ import 'ant-design-vue/dist/antd.less';
 import VueStorage from 'vue-ls';
 import http from '@/plugin/$http';
 import db from '../db';
-import VueSocketIO from 'vue-socket.io'
-import SocketIO from 'socket.io-client'
+import VueSocketIO from 'vue-socket.io';
+import SocketIO from 'socket.io-client';
+
 
 Vue.use(Antd);
 Vue.use(http);
@@ -44,3 +45,6 @@ new Vue({
   store,
   template: '<App/>'
 }).$mount('#app');
+
+
+
