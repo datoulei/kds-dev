@@ -5,7 +5,7 @@
         <div class="header">
           <span style="margin-left:12px;">
             <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="[0]">
-              <a-menu-item v-for="item in menuList1" :key="item.id" @click="checkType(item,1)">
+              <a-menu-item v-for="item in menu[0].list" :key="item.id" @click="checkType(item,1)">
                 <div class="item">{{ item.name}}</div>
               </a-menu-item>
             </a-menu>
@@ -15,7 +15,7 @@
         </div>
         <div class="body scroll_content">
           <v-food
-            v-for="foo in dish1"
+            v-for="foo in dish[0]"
             :key="foo.id"
             :food="foo"
             :width="width"
@@ -32,7 +32,7 @@
         <div class="header">
           <span style="margin-left:12px;">
             <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="[0]">
-              <a-menu-item v-for="item in menuList2" :key="item.id" @click="checkType(item,2)">
+              <a-menu-item v-for="item in menu[1].list" :key="item.id" @click="checkType(item,2)">
                 <div class="item">{{ item.name}}</div>
               </a-menu-item>
             </a-menu>
@@ -43,7 +43,7 @@
         <div class="body scroll_content">
           <v-food
             class="desk"
-            v-for="foo in dish2"
+            v-for="foo in dish[1]"
             :key="foo.id"
             :food="foo"
             :width="width"
@@ -57,7 +57,7 @@
         <div class="header">
           <span style="margin-left:12px;">
             <a-menu mode="horizontal" theme="dark" :defaultSelectedKeys="[0]">
-              <a-menu-item v-for="item in menuList3" :key="item.id" @click="checkType(item,3)">
+              <a-menu-item v-for="item in menu[2].list" :key="item.id" @click="checkType(item,3)">
                 <div class="item">{{ item.name}}</div>
               </a-menu-item>
             </a-menu>
@@ -68,7 +68,7 @@
         <div class="body scroll_content">
           <v-food
             class="desk"
-            v-for="foo in dish3"
+            v-for="foo in dish[2]"
             :key="foo.id"
             :food="foo"
             :width="width"
@@ -86,6 +86,10 @@ import { ipcRenderer } from 'electron';
 import Food from '@/components/Desk/Food-1.vue';
 import _ from 'lodash';
 import mysql from 'mysql';
+import { mapState, mapActions, mapGetters } from 'vuex';
+
+var connection = null;
+
 export default {
   sockets: {
     // 新菜
@@ -133,15 +137,12 @@ export default {
   data() {
     return {
       overTime: {}, // 超时数据
-      categories1: [], // 区域1类别数组
-      categories2: [], // 区域2类别数组
-      categories3: [], // 区域3类别数组
-      currentCategory1: 0, // 区域1选中的数组
-      currentCategory2: 0, // 区域2选中的数组
-      currentCategory3: 0, // 区域3选中的数组
-      sort1: 'asc', // 排序
-      sort2: 'asc',
-      sort3: 'asc'
+      currentCategory1: 0,
+      currentCategory2: 0,
+      currentCategory3: 0,
+      sort1: 0,
+      sort2: 0,
+      sort3: 0
     };
   },
   components: {
@@ -149,55 +150,38 @@ export default {
   },
   created() {
     // mysql
-    var connection = mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: '123456',
-      database: 'mhwz'
+    this.connectMysql();
+
+    // 查库获取订单菜品
+    this.GetOrderList().then(newOrders => {
+      const list = newOrders.map(order => {
+        order.isDone = false;
+        order.finishTime = null;
+        return order;
+      });
+      this.$store.dispatch('setOrderList', list);
     });
 
-    connection.connect(err => {
-      if (err) {
-        console.log(err.code);
-        console.log(err.fatal);
-      } else {
-        console.log('connect successful');
-        const sql = 'select * from t_user';
-        connection.query(sql, function(err, rows, fields) {
-          if (err) {
-            console.log('查询错误');
-          } else {
-            console.log(rows);
-          }
-        });
-      }
-    });
-
-    this.GetOrderList().then(rst => {
-      if (rst && rst.length > 0) {
-        rst[0].categories.map(category => {
-          this.categories1.push(category.id);
-        });
-        rst[1].categories.map(category => {
-          this.categories2.push(category.id);
-        });
-        rst[2].categories.map(category => {
-          this.categories3.push(category.id);
-        });
-      }
-
-      this.$store.commit('SET_ORDER_LIST', rst);
-      // 就绪
-      ipcRenderer.send('complete', rst, '', 'outer');
-    });
-
+    // 超时时间
     this.GetOverTime().then(rst => {
       this.overTime = rst;
       ipcRenderer.send('complete', '', rst, '_outer');
+      this.setOverTime(rst);
+    });
+
+    // 获取分类
+    this.GetCategory().then(categories => {
+      this.setCategories(categories);
+    });
+
+    // 获取菜品
+    this.GetDishes().then(dishes => {
+      this.setDishes(dishes);
     });
   },
   beforeDestroy() {},
   computed: {
+    ...mapGetters(['getFinishOrder', 'getUnFinishOrder']),
     // 小卡片的宽
     width() {
       const width = (window.screen.width - 36) / 2;
@@ -215,178 +199,56 @@ export default {
     type() {
       return this.$store.state.user.type;
     },
-    // 菜单列表
-    orderList() {
-      const orderList = this.$store.state.user.orderList;
-      return Array.isArray(orderList) ? orderList : [];
-    },
 
-    // 区域1内容
-    orderList1() {
-      if (Array.isArray(this.orderList) && this.orderList.length > 0) {
-        // 未划菜
-        if (this.type === 0) {
-          if (this.currentCategory1 === 0) {
-            // 全部
-            return this.orderList[0].dishes.filter(item => !item.isDone);
-          } else {
-            return this.orderList[0].dishes.filter(
-              item =>
-                !item.isDone && item.Dish.categoryId === this.currentCategory1
-            );
-          }
-        } else {
-          // 划菜
-          if (this.currentCategory1 === 0) {
-            // 全部
-            return this.orderList[0].dishes.filter(item => item.isDone);
-          } else {
-            return this.orderList[0].dishes.filter(
-              item =>
-                item.isDone && item.Dish.categoryId === this.currentCategory1
-            );
-          }
-        }
-      } else {
-        return [];
-      }
-    },
-    // 区域2内容
-    orderList2() {
-      if (Array.isArray(this.orderList) && this.orderList.length > 0) {
-        // 未划菜
-        if (this.type === 0) {
-          if (this.currentCategory2 === 0) {
-            // 全部
-            return this.orderList[1].dishes.filter(item => !item.isDone);
-          } else {
-            return this.orderList[1].dishes.filter(
-              item =>
-                !item.isDone && item.Dish.categoryId === this.currentCategory2
-            );
-          }
-        } else {
-          // 划菜
-          if (this.currentCategory2 === 0) {
-            // 全部
-            return this.orderList[1].dishes.filter(item => item.isDone);
-          } else {
-            return this.orderList[1].dishes.filter(
-              item =>
-                item.isDone && item.Dish.categoryId === this.currentCategory2
-            );
-          }
-        }
-      } else {
-        return [];
-      }
-    },
-    // 区域3内容
-    orderList3() {
-      if (Array.isArray(this.orderList) && this.orderList.length > 0) {
-        // 未划菜
-        if (this.type === 0) {
-          if (this.currentCategory2 === 0) {
-            // 全部
-            return this.orderList[2].dishes.filter(item => !item.isDone);
-          } else {
-            return this.orderList[2].dishes.filter(
-              item =>
-                !item.isDone && item.Dish.categoryId === this.currentCategory2
-            );
-          }
-        } else {
-          // 划菜
-          if (this.currentCategory2 === 0) {
-            // 全部
-            return this.orderList[2].dishes.filter(item => item.isDone);
-          } else {
-            return this.orderList[2].dishes.filter(
-              item =>
-                item.isDone && item.Dish.categoryId === this.currentCategory2
-            );
-          }
-        }
-      } else {
-        return [];
-      }
-    },
-
-    dish1() {
-      let dishList = _.sortBy(this.orderList1, item => {
-        if (this.sort1 === 'asc') {
-          return new Date(item.createdAt).getTime();
-        } else {
-          return -new Date(item.createdAt).getTime();
-        }
-      });
-      return dishList;
-    },
-
-    dish2() {
-      let dishList = _.sortBy(this.orderList2, item => {
-        if (this.sort2 === 'asc') {
-          return new Date(item.createdAt).getTime();
-        } else {
-          return -new Date(item.createdAt).getTime();
-        }
-      });
-      return dishList;
-    },
-
-    dish3() {
-      let dishList = _.sortBy(this.orderList3, item => {
-        if (this.sort3 === 'asc') {
-          return new Date(item.createdAt).getTime();
-        } else {
-          return -new Date(item.createdAt).getTime();
-        }
-      });
-      return dishList;
-    },
-
-    menuList1() {
-      const menu = [{ id: 0, name: '全部' }];
-      if (Array.isArray(this.orderList) && this.orderList.length > 0) {
-        return menu.concat(this.orderList[0].categories);
-      }
-      return menu;
-    },
-    menuList2() {
-      const menu = [{ id: 0, name: '全部' }];
-      if (Array.isArray(this.orderList) && this.orderList.length > 0) {
-        return menu.concat(this.orderList[1].categories);
-      }
-      return menu;
-    },
-    menuList3() {
-      const menu = [{ id: 0, name: '全部' }];
-      if (Array.isArray(this.orderList) && this.orderList.length > 0) {
-        return menu.concat(this.orderList[2].categories);
-      }
-      return menu;
-    },
-
+    //是否显示备注
     showRemark() {
       return this.$store.state.user.remark;
+    },
+
+    // 区域中包含对应的分类
+    menu() {
+      return this.$store.getters.areaCategories;
+    },
+
+    dish() {
+      if (this.type === 0) {
+        return this.build(this.getUnFinishOrder);
+      } else {
+        return this.build(this.getFinishOrder);
+      }
     }
   },
   methods: {
-    // 获取订单列表
-    async GetOrderList() {
-      try {
-        return await this.$http.get('/order/shop', {
-          params: {
-            timestamp: Date.now()
-          }
-        });
-      } catch (error) {}
-    },
-    // 超时处理
-    async GetOverTime() {
-      try {
-        return await this.$http.get('/setting/overtime');
-      } catch (error) {}
+    ...mapActions([
+      'setOrderList',
+      'setOverTime',
+      'setCategories',
+      'setDishes'
+    ]),
+
+    build(orders) {
+      const order_1 = orders[0].filter(item => {
+        if (this.currentCategory1 === 0) {
+          return true;
+        } else {
+          return item.categoryId === this.currentCategory1;
+        }
+      });
+      const order_2 = orders[1].filter(item => {
+        if (this.currentCategory2 === 0) {
+          return true;
+        } else {
+          return item.categoryId === this.currentCategory2;
+        }
+      });
+      const order_3 = orders[2].filter(item => {
+        if (this.currentCategory3 === 0) {
+          return true;
+        } else {
+          return item.categoryId === this.currentCategory3;
+        }
+      });
+      return [order_1, order_2, order_3];
     },
 
     doneDish(data) {
@@ -416,27 +278,28 @@ export default {
       }
     },
 
+    // 排序
     sort(type) {
       switch (type) {
         case 1:
           if (this.sort1 === 'asc') {
             this.sort1 = ' desc';
           } else {
-            this.sort1 = 'asc';
+            this.sort1 = 'desc';
           }
           break;
         case 2:
           if (this.sort2 === 'asc') {
             this.sort2 = ' desc';
           } else {
-            this.sort2 = 'asc';
+            this.sort2 = 'desc';
           }
           break;
         case 3:
           if (this.sort3 === 'asc') {
             this.sort3 = ' desc';
           } else {
-            this.sort3 = 'asc';
+            this.sort3 = 'desc';
           }
           break;
         default:
@@ -444,6 +307,7 @@ export default {
       }
     },
 
+    // 关闭全屏
     closeScreenFull() {
       this.$store.commit('SET_FULL', false);
       this.$store.commit('SET_CARD1HEIGHT', window.screen.height - 100 - 24);
@@ -451,6 +315,70 @@ export default {
         'SET_CARD23HEIGHT',
         (window.screen.height - 100 - 36) / 2
       );
+    },
+
+    // 连接mysql
+    connectMysql() {
+      connection = mysql.createConnection({
+        host: 'localhost',
+        port: '3306',
+        user: 'q_user',
+        password: 'q_user',
+        database: 'db_mendian'
+      });
+      connection.connect(err => {
+        if (err) {
+          console.log(
+            '数据库连接失败!',
+            'connect mysql error code:',
+            err.code,
+            'connect mysql error message:',
+            err.fatal
+          );
+        } else {
+          console.log('db连接成功...');
+        }
+      });
+    },
+
+    //=======================================================================
+    // 超时处理
+    async GetOverTime() {
+      try {
+        return await this.$http.get('/setting/overtime');
+      } catch (error) {}
+    },
+    // 获取分类
+    async GetCategory() {
+      try {
+        return await this.$http.get('/categories');
+      } catch (error) {}
+    },
+
+    //获取所有菜品
+    async GetDishes() {
+      try {
+        return await this.$http.get('/dishes', {
+          params: {
+            all: true
+          }
+        });
+      } catch (error) {}
+    },
+
+    // 查询订单数据
+    async GetOrderList() {
+      return new Promise((resolve, reject) => {
+        const sql =
+          'select orderKey,orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food';
+        connection.query(sql, function(err, rows, fields) {
+          if (err) {
+            console.log('dishes查询错误：', err.fatal);
+          } else {
+            resolve(rows);
+          }
+        });
+      });
     }
   },
   mounted() {
