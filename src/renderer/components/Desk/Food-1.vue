@@ -10,7 +10,7 @@
       </div>
       <div class="body">
         <div class="name">{{ food.foodName }}</div>
-        <div class="remark" v-if="showRemark===true">备注：{{ food.remark }}</div>
+        <div class="remark" v-if="showRemark===true">备注：{{ food.unit }}</div>
       </div>
     </div>
   </div>

@@ -1,3 +1,6 @@
+import dayjs from 'dayjs';
+import db from '../../../db';
+
 
 const state = {
 
@@ -13,6 +16,8 @@ const state = {
   // 订单
   orderList: [],
 
+  // 待推送订单列表
+  uploadOrderList: [],
 
 
 
@@ -86,15 +91,41 @@ const getters = {
       })
     })
     return orders;
-  }
+  },
+
+  getOrderList: state => state.orderList,
 };
 
 const mutations = {
 
-
-  SET_ORDER_LIST(state, newOrders) {
+  // 划菜、撤销
+  SET_ORDER_LIST(state, dish) {
     const orderList = state.orderList;
-    state.orderList = [...orderList, ...newOrders]
+    const _orderList = orderList.map(order => {
+      if (order.key === dish.key) {
+        if (order.isDone === false) {
+          order.isDone = true;
+          order.finishTime = dayjs().format('YYYYMMDDHHmmss');
+        } else {
+          order.isDone = false;
+          order.finishTime = null;
+        }
+      }
+      return order;
+    });
+    state.orderList = _orderList;
+
+    //持久化
+    console.log(state.orderList);
+    db.set('orderList', _orderList).write();
+
+  },
+
+  PUSH_ORDER_LIST(state, newOrders) {
+    const orderList = state.orderList;
+    state.orderList = [...orderList, ...newOrders];
+    // 持久化
+    db.set('orderList', [...orderList, ...newOrders]).write();
   },
 
   SET_OVERTIME(state, overTime) {
@@ -109,11 +140,33 @@ const mutations = {
     state.dishes = dishes
   },
 
+  ADD_UPLOAD_LIST(state, uploadList) {
+    const temp = state.uploadOrderList;
+    state.uploadOrderList = [...temp, ...uploadList];
+    // 持久化
+    db.set('uploadList', [...temp, ...uploadList]).write();
+  },
+
+  RM_UPLOAD_LIST(state, dish) {
+    const temp = state.uploadOrderList;
+    const _uploadList = temp.filter(item => {
+      if (item.orderKey !== dish.orderKey) {
+        return item;
+      }
+    });
+    state.uploadOrderList = _uploadList;
+    // 持久化
+    db.set('uploadList', _uploadList).write();
+  }
 };
 
 const actions = {
-  setOrderList({ commit }, newOrders) {
-    commit('SET_ORDER_LIST', newOrders);
+  pushOrderList({ commit }, newOrders) {
+    commit('PUSH_ORDER_LIST', newOrders);
+  },
+
+  setOrderList({ commit }, dish) {
+    commit('SET_ORDER_LIST', dish);
   },
 
   setOverTime({ commit }, overTime) {
@@ -128,8 +181,12 @@ const actions = {
     commit('SET_DISHES', dishes);
   },
 
-  setUnFinishList({ commit }, list) {
+  setUploadList({ commit }, uploadList) {
+    commit('ADD_UPLOAD_LIST', uploadList);
+  },
 
+  rmUploadList({ commit }, dish) {
+    commit('RM_UPLOAD_LIST', dish);
   }
 };
 

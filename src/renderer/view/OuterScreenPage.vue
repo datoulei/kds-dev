@@ -12,10 +12,11 @@
           </span>
           <div class="divider"></div>
           <div class="item" @click="sort(1)">时间排序</div>
+          <a-button @click="uploadOrder">上传</a-button>
         </div>
         <div class="body scroll_content">
           <v-food
-            v-for="foo in dish[0]"
+            v-for="foo in area1"
             :key="foo.id"
             :food="foo"
             :width="width"
@@ -43,7 +44,7 @@
         <div class="body scroll_content">
           <v-food
             class="desk"
-            v-for="foo in dish[1]"
+            v-for="foo in area2"
             :key="foo.id"
             :food="foo"
             :width="width"
@@ -68,7 +69,7 @@
         <div class="body scroll_content">
           <v-food
             class="desk"
-            v-for="foo in dish[2]"
+            v-for="foo in area3"
             :key="foo.id"
             :food="foo"
             :width="width"
@@ -87,49 +88,30 @@ import Food from '@/components/Desk/Food-1.vue';
 import _ from 'lodash';
 import mysql from 'mysql';
 import { mapState, mapActions, mapGetters } from 'vuex';
+import dayjs from 'dayjs';
+import { v4 } from 'uuid';
+import db from '../../db';
 
 var connection = null;
-
+var timer;
 export default {
   sockets: {
     // 新菜
     'create-order'(data) {
       console.log('推送菜品 => ', data);
-      const categoryId = data.Dish.categoryId;
-      const list = this.orderList.map(item => Object.assign([], item));
-      if (this.categories2.includes(categoryId)) {
-        list[1].dishes.push(data);
-      } else if (this.categories3.includes(categoryId)) {
-        list[2].dishes.push(data);
-      } else {
-        list[0].dishes.push(data);
-      }
-      this.$store.commit('SET_ORDER_LIST', list);
     },
     // 撤单
     'return-order'(data) {
       console.log('取消菜品 => ', data);
-      this.GetOrderList().then(rst => {
-        this.$store.commit('SET_ORDER_LIST', rst);
-        ipcRenderer.send('orderList', rst);
-      });
     },
     'done-dish-confirm'(data) {
       if (data.code === 0) {
         this.$message.success('划菜成功', 0.5);
-        this.GetOrderList().then(rst => {
-          this.$store.commit('SET_ORDER_LIST', rst);
-          ipcRenderer.send('orderList', rst);
-        });
       }
     },
     'undo-dish-confirm'(data) {
       if (data.code === 0) {
         this.$message.success('撤销成功', 0.5);
-        this.GetOrderList().then(rst => {
-          this.$store.commit('SET_ORDER_LIST', rst);
-          ipcRenderer.send('orderList', rst);
-        });
       }
     }
   },
@@ -140,27 +122,45 @@ export default {
       currentCategory1: 0,
       currentCategory2: 0,
       currentCategory3: 0,
-      sort1: 0,
-      sort2: 0,
-      sort3: 0
+      sort1: 'desc',
+      sort2: 'desc',
+      sort3: 'desc'
     };
   },
   components: {
     'v-food': Food
   },
   created() {
+    // 初始化
+    db.set('orderList', []).write();
+    db.set('queryTime', null).write();
+    const list = db.get('orderList').value();
+    if (!list) {
+      this.$store.dispatch('pushOrderList', []);
+    } else {
+      this.$store.dispatch('pushOrderList', list);
+    }
+
+    setInterval(() => {
+      this.GetOrderList().then(newOrders => {
+        var temp = [];
+        newOrders.map(order => {
+          for (var i = 0; i < order.foodNumber; i++) {
+            temp.push({
+              key: v4(),
+              isDone: false,
+              finishTime: null,
+              ...order
+            });
+          }
+        });
+        this.$store.dispatch('pushOrderList', temp);
+        ipcRenderer.send('');
+      });
+    }, 1000);
+
     // mysql
     this.connectMysql();
-
-    // 查库获取订单菜品
-    this.GetOrderList().then(newOrders => {
-      const list = newOrders.map(order => {
-        order.isDone = false;
-        order.finishTime = null;
-        return order;
-      });
-      this.$store.dispatch('setOrderList', list);
-    });
 
     // 超时时间
     this.GetOverTime().then(rst => {
@@ -181,7 +181,7 @@ export default {
   },
   beforeDestroy() {},
   computed: {
-    ...mapGetters(['getFinishOrder', 'getUnFinishOrder']),
+    ...mapGetters(['getFinishOrder', 'getUnFinishOrder', 'getOrderList']),
     // 小卡片的宽
     width() {
       const width = (window.screen.width - 36) / 2;
@@ -210,57 +210,94 @@ export default {
       return this.$store.getters.areaCategories;
     },
 
-    dish() {
+    area1() {
       if (this.type === 0) {
-        return this.build(this.getUnFinishOrder);
+        return this.build(
+          this.getUnFinishOrder[0],
+          this.currentCategory1,
+          this.sort1
+        );
       } else {
-        return this.build(this.getFinishOrder);
+        return this.build(
+          this.getFinishOrder[0],
+          this.currentCategory1,
+          this.sort1
+        );
+      }
+    },
+    area2() {
+      if (this.type === 0) {
+        return this.build(
+          this.getUnFinishOrder[1],
+          this.currentCategory2,
+          this.sort2
+        );
+      } else {
+        return this.build(
+          this.getFinishOrder[1],
+          this.currentCategory2,
+          this.sort2
+        );
+      }
+    },
+    area3() {
+      if (this.type === 0) {
+        return this.build(
+          this.getUnFinishOrder[2],
+          this.currentCategory3,
+          this.sort3
+        );
+      } else {
+        return this.build(
+          this.getFinishOrder[2],
+          this.currentCategory3,
+          this.sort3
+        );
       }
     }
   },
   methods: {
     ...mapActions([
       'setOrderList',
+      'pushOrderList',
       'setOverTime',
       'setCategories',
-      'setDishes'
+      'setDishes',
+      'setUploadList',
+      'rmUploadList'
     ]),
 
-    build(orders) {
-      const order_1 = orders[0].filter(item => {
-        if (this.currentCategory1 === 0) {
+    build(orders, currentCategory, sort) {
+      const order = orders.filter(item => {
+        if (currentCategory === 0) {
           return true;
         } else {
-          return item.categoryId === this.currentCategory1;
+          return item.categoryId === currentCategory;
         }
       });
-      const order_2 = orders[1].filter(item => {
-        if (this.currentCategory2 === 0) {
-          return true;
+
+      return _.sortBy(order, item => {
+        if (sort === 'asc') {
+          return item.createTime;
         } else {
-          return item.categoryId === this.currentCategory2;
+          return -item.createTime;
         }
       });
-      const order_3 = orders[2].filter(item => {
-        if (this.currentCategory3 === 0) {
-          return true;
-        } else {
-          return item.categoryId === this.currentCategory3;
-        }
-      });
-      return [order_1, order_2, order_3];
     },
 
     doneDish(data) {
       console.log('划菜：', data.foodName);
       if (!data.isDone) {
-        this.$socket.emit('done-dish', data);
+        this.setOrderList(data);
+        this.addUploadOrderList(data);
       } else {
         this.$confirm({
           title: '提示',
           content: '确定要撤销划菜?',
           onOk: () => {
-            this.$socket.emit('undo-dish', data);
+            this.setOrderList(data);
+            this.rmUploadList(data);
+            //this.$socket.emit('undo-dish', data);
           },
           onCancel() {}
         });
@@ -285,21 +322,21 @@ export default {
           if (this.sort1 === 'asc') {
             this.sort1 = ' desc';
           } else {
-            this.sort1 = 'desc';
+            this.sort1 = 'asc';
           }
           break;
         case 2:
           if (this.sort2 === 'asc') {
             this.sort2 = ' desc';
           } else {
-            this.sort2 = 'desc';
+            this.sort2 = 'asc';
           }
           break;
         case 3:
           if (this.sort3 === 'asc') {
             this.sort3 = ' desc';
           } else {
-            this.sort3 = 'desc';
+            this.sort3 = 'asc';
           }
           break;
         default:
@@ -369,16 +406,59 @@ export default {
     // 查询订单数据
     async GetOrderList() {
       return new Promise((resolve, reject) => {
-        const sql =
-          'select orderKey,orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food';
+        const queryTime = db.get('queryTime').value();
+
+        let sql = '';
+        if (!queryTime) {
+          //第一次启动，查询四个小时前
+          const date = dayjs()
+            .subtract(40, 'hour')
+            .format('YYYYMMDDHHmmss');
+          sql =
+            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
+            date;
+        } else {
+          // 查询上一次执行后的时间段
+          sql =
+            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food where orderStatus=40 and createTime >= ' +
+            queryTime;
+        }
+
+        db.set('queryTime', dayjs().format('YYYYMMDDHHmmss')).write();
+
         connection.query(sql, function(err, rows, fields) {
           if (err) {
             console.log('dishes查询错误：', err.fatal);
           } else {
+            console.log('查询成功...');
             resolve(rows);
           }
         });
       });
+    },
+
+    addUploadOrderList(data) {
+      const orderList = this.getOrderList;
+      console.log('====orderList:', orderList);
+      const orders = orderList.filter(item => item.orderKey === data.orderKey);
+
+      console.log('======orders:', orders);
+
+      const unDone = orders.filter(item => item.isDone === false);
+      if (unDone.length === 0) {
+        this.setUploadList(orders);
+      }
+    },
+
+    async uploadOrder() {
+      const orderList = this.$store.state.order.uploadOrderList;
+      try {
+        const rst = await this.$http.post('/order/upload', {
+          list: orderList
+        });
+      } catch (error) {
+        console.log(error);
+      }
     }
   },
   mounted() {
