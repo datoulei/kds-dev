@@ -12,7 +12,6 @@
           </span>
           <div class="divider"></div>
           <div class="item" @click="sort(1)">时间排序</div>
-          <a-button @click="uploadOrder">上传</a-button>
         </div>
         <div class="body scroll_content">
           <v-food
@@ -134,8 +133,8 @@ export default {
     // mysql
     this.connectMysql();
     // 初始化
-    db.set('orderList', []).write();
-    db.set('queryTime', null).write();
+    //db.set('orderList', []).write();
+    //db.set('queryTime', null).write();
     const list = db.get('orderList').value();
     if (!list) {
       this.$store.dispatch('pushOrderList', []);

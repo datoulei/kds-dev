@@ -1,7 +1,7 @@
 <template>
   <div class="box">
     <a-icon class="btn minimize" type="minus" @click="handleClick('minimize')"></a-icon>
-    <a-icon class="btn maximize" type="border" @click="handleClick('maximize')"></a-icon>
+    <!-- <a-icon class="btn maximize" type="border" @click="handleClick('maximize')"></a-icon> -->
     <a-icon class="btn close" type="close" @click="handleClick('close')"></a-icon>
   </div>
 </template>

@@ -87,6 +87,7 @@ function createOuterWindow() {
     width: 1000,
     frame: false,
     resizable: false,
+    fullscreen: true,
     webPreferences: {
       nodeIntegration: true,
       webviewTag: true,
