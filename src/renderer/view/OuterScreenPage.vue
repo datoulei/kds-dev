@@ -155,7 +155,8 @@ export default {
           }
         });
         this.$store.dispatch('pushOrderList', temp);
-        ipcRenderer.send('');
+        // 就绪
+        ipcRenderer.send('complete', rst, '', 'outer');
       });
     }, 1000);
 
