@@ -62,7 +62,7 @@ export default {
   methods: {
     moment,
     HandleTime() {
-      this.time = dayjs().diff(dayjs(this.food.createdAt), 'minute');
+      this.time = dayjs().diff(dayjs('' + this.food.createTime), 'minute');
     }
   }
 };

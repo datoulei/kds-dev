@@ -1,11 +1,8 @@
 import dayjs from 'dayjs';
 import db from '../../../db';
-
+import { ipcRenderer } from 'electron';
 
 const state = {
-
-  // 超时时间
-  overTime: {},
 
   // 分类
   categories: [],
@@ -105,7 +102,7 @@ const mutations = {
       if (order.key === dish.key) {
         if (order.isDone === false) {
           order.isDone = true;
-          order.finishTime = dayjs().format('YYYYMMDDHHmmss');
+          order.finishTime = Number(dayjs().format('YYYYMMDDHHmmss'));
         } else {
           order.isDone = false;
           order.finishTime = null;
@@ -118,6 +115,7 @@ const mutations = {
     //持久化
     console.log(state.orderList);
     db.set('orderList', _orderList).write();
+    ipcRenderer.send('orderList', _orderList);
 
   },
 
@@ -126,10 +124,7 @@ const mutations = {
     state.orderList = [...orderList, ...newOrders];
     // 持久化
     db.set('orderList', [...orderList, ...newOrders]).write();
-  },
-
-  SET_OVERTIME(state, overTime) {
-    state.overTime = overTime
+    ipcRenderer.send('orderList', [...orderList, ...newOrders]);
   },
 
   SET_CATEGORIES(state, categories) {
@@ -157,6 +152,11 @@ const mutations = {
     state.uploadOrderList = _uploadList;
     // 持久化
     db.set('uploadList', _uploadList).write();
+  },
+
+
+  CLEAR_UPLOAD_LIST(state) {
+    state.uploadOrderList = [];
   }
 };
 
@@ -167,10 +167,6 @@ const actions = {
 
   setOrderList({ commit }, dish) {
     commit('SET_ORDER_LIST', dish);
-  },
-
-  setOverTime({ commit }, overTime) {
-    commit('SET_OVERTIME', overTime);
   },
 
   setCategories({ commit }, categories) {
@@ -187,6 +183,10 @@ const actions = {
 
   rmUploadList({ commit }, dish) {
     commit('RM_UPLOAD_LIST', dish);
+  },
+
+  clearUploadList({ commit }) {
+    commit('CLEAR_UPLOAD_LIST');
   }
 };
 

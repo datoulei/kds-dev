@@ -1,6 +1,6 @@
 <template>
   <div class="content">
-    <v-desk :food="order" v-for="order in dish" :key="order.id" />
+    <v-desk :food="order" v-for="order in orderList" :key="order.key" />
   </div>
 </template>
 <script>
@@ -20,20 +20,7 @@ export default {
   beforeDestroy() {
     ipcRenderer.removeAllListeners('getOrderList');
   },
-  computed: {
-    dish() {
-      let dishes = [];
-      if (Array.isArray(this.orderList)) {
-        this.orderList.map(item => {
-          dishes = dishes.concat(item.dishes);
-        });
-
-        return this.formatData(dishes);
-        //return testData;
-      }
-      return [];
-    }
-  },
+  computed: {},
   methods: {
     formatData(dishes) {
       const temp = _.groupBy(dishes, 'orderKey');
@@ -42,7 +29,7 @@ export default {
         arr.push({
           id: key,
           tableName: temp[key][0].tableName,
-          createdAt: temp[key][0].createdAt,
+          createTime: temp[key][0].createTime,
           data: temp[key]
         });
       }
@@ -51,9 +38,11 @@ export default {
   },
   mounted() {
     ipcRenderer.on('getOrderList', (event, data) => {
-      this.orderList = data;
+      if (Array.isArray(data)) {
+        this.orderList = this.formatData(data);
+      }
     });
-    ipcRenderer.once('getOverTime', (event, data) => {
+    ipcRenderer.on('getOverTime', (event, data) => {
       this.$store.commit('SET_OVERTIME', data);
     });
     ipcRenderer.send('complete', '', '', 'inner');

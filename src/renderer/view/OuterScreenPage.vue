@@ -131,6 +131,8 @@ export default {
     'v-food': Food
   },
   created() {
+    // mysql
+    this.connectMysql();
     // 初始化
     db.set('orderList', []).write();
     db.set('queryTime', null).write();
@@ -141,33 +143,21 @@ export default {
       this.$store.dispatch('pushOrderList', list);
     }
 
-    setInterval(() => {
-      this.GetOrderList().then(newOrders => {
-        var temp = [];
-        newOrders.map(order => {
-          for (var i = 0; i < order.foodNumber; i++) {
-            temp.push({
-              key: v4(),
-              isDone: false,
-              finishTime: null,
-              ...order
-            });
-          }
-        });
-        this.$store.dispatch('pushOrderList', temp);
-        // 就绪
-        ipcRenderer.send('complete', rst, '', 'outer');
-      });
-    }, 1000);
+    ipcRenderer.send('complete', [], '', 'outer');
 
-    // mysql
-    this.connectMysql();
+    this.queryOrder();
+    setInterval(() => {
+      this.queryOrder();
+    }, 10000);
+
+    setInterval(() => {
+      this.uploadOrder();
+    }, 60000);
 
     // 超时时间
     this.GetOverTime().then(rst => {
       this.overTime = rst;
       ipcRenderer.send('complete', '', rst, '_outer');
-      this.setOverTime(rst);
     });
 
     // 获取分类
@@ -261,12 +251,31 @@ export default {
     ...mapActions([
       'setOrderList',
       'pushOrderList',
-      'setOverTime',
       'setCategories',
       'setDishes',
       'setUploadList',
-      'rmUploadList'
+      'rmUploadList',
+      'clearUploadList'
     ]),
+
+    queryOrder() {
+      this.GetOrderList().then(newOrders => {
+        var temp = [];
+        newOrders.map(order => {
+          for (var i = 0; i < order.foodNumber; i++) {
+            temp.push({
+              key: v4(),
+              isDone: false,
+              finishTime: null,
+              ...order
+            });
+          }
+        });
+        this.$store.dispatch('pushOrderList', temp);
+        ipcRenderer.send('orderList');
+        // 就绪
+      });
+    },
 
     build(orders, currentCategory, sort) {
       const order = orders.filter(item => {
@@ -298,6 +307,7 @@ export default {
           onOk: () => {
             this.setOrderList(data);
             this.rmUploadList(data);
+            this.cancelUploadOrder(data);
             //this.$socket.emit('undo-dish', data);
           },
           onCancel() {}
@@ -440,11 +450,7 @@ export default {
 
     addUploadOrderList(data) {
       const orderList = this.getOrderList;
-      console.log('====orderList:', orderList);
       const orders = orderList.filter(item => item.orderKey === data.orderKey);
-
-      console.log('======orders:', orders);
-
       const unDone = orders.filter(item => item.isDone === false);
       if (unDone.length === 0) {
         this.setUploadList(orders);
@@ -453,9 +459,24 @@ export default {
 
     async uploadOrder() {
       const orderList = this.$store.state.order.uploadOrderList;
+
       try {
+        if (orderList.length === 0) {
+          return;
+        }
         const rst = await this.$http.post('/order/upload', {
           list: orderList
+        });
+        this.$message.success('订单上传成功');
+        this.clearUploadList();
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async cancelUploadOrder(data) {
+      try {
+        const rst = await this.$http.post('/order/undo', {
+          orderKey: data.orderKey
         });
       } catch (error) {
         console.log(error);

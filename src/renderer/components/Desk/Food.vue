@@ -11,7 +11,7 @@
       <div class="num">x1</div>
     </div>
     <div class="footer">
-      <span :class="['remark',line]">备注：{{ food.remark }}</span>
+      <span :class="['remark',line]">备注：{{ food.unit }}</span>
       <span v-if="food.isDone" class="desc">已划菜</span>
     </div>
   </div>
@@ -46,13 +46,16 @@ export default {
   },
   computed: {
     foodColor() {
-      const temp = this.$store.state.user.overTime;
-      if (this.diffTime >= temp.halfTime && this.diffTime <= temp.allTime) {
-        this.color = temp.halfColor;
+      const overTime = this.$store.state.user.overTime;
+      if (
+        this.diffTime >= overTime.halfTime &&
+        this.diffTime <= overTime.allTime
+      ) {
+        this.color = overTime.halfColor;
         return `half-time`;
       }
-      if (this.diffTime > temp.allTime) {
-        this.color = temp.allColor;
+      if (this.diffTime > overTime.allTime) {
+        this.color = overTime.allColor;
         return `full-time`;
       }
     },
@@ -67,7 +70,7 @@ export default {
   },
   methods: {
     HandleTime() {
-      this.diffTime = dayjs().diff(dayjs(this.food.createdAt), 'minute');
+      this.diffTime = dayjs().diff(dayjs('' + this.food.createTime), 'minute');
     }
   }
 };

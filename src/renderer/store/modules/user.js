@@ -19,6 +19,8 @@ const state = {
   // 是否全屏
   full: false,
 
+  overTime: {},
+
 };
 
 const getters = {
@@ -27,7 +29,7 @@ const getters = {
   Type: state => state.type,
   remark: state => state.remark,
   card1Height: state => state.card1Height,
-  card1Height: state => state.card23Height,
+  card23Height: state => state.card23Height,
   full: state => state.full,
 
 };
@@ -52,6 +54,9 @@ const mutations = {
   },
   SET_FULL(state, full) {
     state.full = full
+  },
+  SET_OVERTIME(state, overTime) {
+    state.overTime = overTime
   }
 };
 

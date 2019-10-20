@@ -2,7 +2,7 @@
   <div class="table-card" :style="{'height':tableHeight+'px','width':tableWidth+'px'}">
     <div class="header">
       <span class="title">台号：{{food.tableName}}</span>
-      <span>{{ moment(food.createdAt).format("HH:mm")}}</span>
+      <span>{{ moment(food.createTime).format("HH:mm")}}</span>
     </div>
     <div class="body" :style="{height:bodyHeight+'px'}">
       <v-food
