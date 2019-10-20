@@ -33,7 +33,17 @@ export default {
           data: temp[key]
         });
       }
-      return arr;
+      // [
+      //   {id:0,tableName:'A1',createTime:201910202240,data:[{}]}
+      // ]
+      return arr.filter(item => {
+        const finish = item.data.filter(_item => !_item.isDone);
+        if (finish.length !== 0) {
+          return {
+            item
+          };
+        }
+      });
     }
   },
   mounted() {

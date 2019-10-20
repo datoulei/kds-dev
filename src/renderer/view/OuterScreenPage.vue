@@ -94,26 +94,26 @@ import db from '../../db';
 var connection = null;
 var timer;
 export default {
-  sockets: {
-    // 新菜
-    'create-order'(data) {
-      console.log('推送菜品 => ', data);
-    },
-    // 撤单
-    'return-order'(data) {
-      console.log('取消菜品 => ', data);
-    },
-    'done-dish-confirm'(data) {
-      if (data.code === 0) {
-        this.$message.success('划菜成功', 0.5);
-      }
-    },
-    'undo-dish-confirm'(data) {
-      if (data.code === 0) {
-        this.$message.success('撤销成功', 0.5);
-      }
-    }
-  },
+  // sockets: {
+  //   // 新菜
+  //   'create-order'(data) {
+  //     console.log('推送菜品 => ', data);
+  //   },
+  //   // 撤单
+  //   'return-order'(data) {
+  //     console.log('取消菜品 => ', data);
+  //   },
+  //   'done-dish-confirm'(data) {
+  //     if (data.code === 0) {
+  //       this.$message.success('划菜成功', 0.5);
+  //     }
+  //   },
+  //   'undo-dish-confirm'(data) {
+  //     if (data.code === 0) {
+  //       this.$message.success('撤销成功', 0.5);
+  //     }
+  //   }
+  // },
 
   data() {
     return {
@@ -422,7 +422,7 @@ export default {
         if (!queryTime) {
           //第一次启动，查询四个小时前
           const date = dayjs()
-            .subtract(40, 'hour')
+            .subtract(24, 'hour')
             .format('YYYYMMDDHHmmss');
           sql =
             'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
@@ -441,6 +441,7 @@ export default {
             console.log('dishes查询错误：', err.fatal);
           } else {
             console.log('查询成功...');
+            console.log(rows);
             resolve(rows);
           }
         });

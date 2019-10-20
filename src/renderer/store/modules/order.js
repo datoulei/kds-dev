@@ -49,6 +49,15 @@ const getters = {
 
     let orders = [[], [], []];
     state.orderList.map(order => {
+
+      // 未在分类中的
+      if (order.isDone) {
+        const filter = state.dishes.filter(item => order.foodName === item.foodName);
+        if (filter.length === 0) {
+          orders[0].push({ ...order, categoryId: 0 });
+        }
+      }
+      // 在分类中
       state.dishes.map(dish => {
         if (order.foodName === dish.foodName && order.isDone === true) {
           if (menu[2].includes(dish.categoryId)) {
@@ -75,6 +84,16 @@ const getters = {
 
     let orders = [[], [], []];
     state.orderList.map(order => {
+
+      // 未在分类中的
+      if (!order.isDone) {
+        const filter = state.dishes.filter(item => order.foodName === item.foodName);
+        if (filter.length === 0) {
+          orders[0].push({ ...order, categoryId: 0 });
+        }
+      }
+
+      // 在分类中的
       state.dishes.map(dish => {
         if (order.foodName === dish.foodName && order.isDone === false) {
           if (menu[2].includes(dish.categoryId)) {

@@ -46,7 +46,8 @@ export default {
   },
   computed: {
     foodColor() {
-      const overTime = this.$store.state.user.overTime;
+      let overTime = { halfTime: 10, allTime: 20 };
+      overTime = this.$store.state.user.overTime;
       if (
         this.diffTime >= overTime.halfTime &&
         this.diffTime <= overTime.allTime
