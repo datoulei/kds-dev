@@ -52,14 +52,16 @@ const getters = {
 
       // 未在分类中的
       if (order.isDone) {
-        const filter = state.dishes.filter(item => order.foodName === item.foodName);
+        const filter = state.dishes.filter(item => order.foodName === item.foodName && order.isCancel !== true);
         if (filter.length === 0) {
-          orders[0].push({ ...order, categoryId: 0 });
+          if (order.isCancel !== true) {
+            orders[0].push({ ...order, categoryId: 0 });
+          }
         }
       }
       // 在分类中
       state.dishes.map(dish => {
-        if (order.foodName === dish.foodName && order.isDone === true) {
+        if (order.foodName === dish.foodName && order.isDone === true && order.isCancel !== true) {
           if (menu[2].includes(dish.categoryId)) {
             orders[2].push({ ...order, categoryId: dish.categoryId });
           } else if (menu[1].includes(dish.categoryId)) {
@@ -89,22 +91,26 @@ const getters = {
       if (!order.isDone) {
         const filter = state.dishes.filter(item => order.foodName === item.foodName);
         if (filter.length === 0) {
-          orders[0].push({ ...order, categoryId: 0 });
-        }
-      }
-
-      // 在分类中的
-      state.dishes.map(dish => {
-        if (order.foodName === dish.foodName && order.isDone === false) {
-          if (menu[2].includes(dish.categoryId)) {
-            orders[2].push({ ...order, categoryId: dish.categoryId });
-          } else if (menu[1].includes(dish.categoryId)) {
-            orders[1].push({ ...order, categoryId: dish.categoryId });
-          } else {
-            orders[0].push({ ...order, categoryId: dish.categoryId });
+          if (order.isCancel !== true) {
+            orders[0].push({ ...order, categoryId: 0 });
           }
         }
-      })
+
+        // 在分类中的
+        state.dishes.map(dish => {
+          if (order.foodName === dish.foodName && order.isDone === false && order.isCancel !== true) {
+            if (menu[2].includes(dish.categoryId)) {
+              orders[2].push({ ...order, categoryId: dish.categoryId });
+            } else if (menu[1].includes(dish.categoryId)) {
+              orders[1].push({ ...order, categoryId: dish.categoryId });
+            } else {
+              orders[0].push({ ...order, categoryId: dish.categoryId });
+            }
+          }
+        })
+      }
+
+
     })
     return orders;
   },
@@ -132,7 +138,6 @@ const mutations = {
     state.orderList = _orderList;
 
     //持久化
-    console.log(state.orderList);
     db.set('orderList', _orderList).write();
     ipcRenderer.send('orderList', _orderList);
 
@@ -141,9 +146,29 @@ const mutations = {
   PUSH_ORDER_LIST(state, newOrders) {
     const orderList = state.orderList;
     state.orderList = [...orderList, ...newOrders];
+
     // 持久化
     db.set('orderList', [...orderList, ...newOrders]).write();
     ipcRenderer.send('orderList', [...orderList, ...newOrders]);
+  },
+
+
+  UPDATE_ORDER_LIST(state, cancelOrderList) {
+    const orderList = state.orderList;
+    const cancelArray = cancelOrderList.map(cancelOrder => {
+      return cancelOrder.itemKey;
+
+    })
+
+    const newOrderList = orderList.map(order => {
+      if (cancelArray.includes(order.itemKey)) {
+        order.isCancel = true;
+      }
+      return order
+    })
+
+    db.set('orderList', newOrderList).write();
+    ipcRenderer.send('orderList', newOrderList);
   },
 
   SET_CATEGORIES(state, categories) {
@@ -186,6 +211,10 @@ const actions = {
 
   setOrderList({ commit }, dish) {
     commit('SET_ORDER_LIST', dish);
+  },
+
+  updateOrderList({ commit }, cancelOrder) {
+    commit('UPDATE_ORDER_LIST', cancelOrder);
   },
 
   setCategories({ commit }, categories) {

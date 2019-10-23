@@ -13,6 +13,7 @@
     <div class="footer">
       <span :class="['remark',line]">备注：{{ food.unit }}</span>
       <span v-if="food.isDone" class="desc">已划菜</span>
+      <span v-else-if="food.isCancel=== true" class="desc">已撤销</span>
     </div>
   </div>
 </template>
@@ -65,7 +66,11 @@ export default {
       if (this.food.isDone) {
         return 'line';
       } else {
-        return 'normal';
+        if (this.food.isCancel) {
+          return 'line';
+        } else {
+          return 'normal';
+        }
       }
     }
   },

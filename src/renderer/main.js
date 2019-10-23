@@ -26,17 +26,17 @@ Vue.db = Vue.prototype.$db = db;
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'));
 Vue.config.productionTip = false;
 
-var client = SocketIO(process.env.VUE_APP_API, { autoConnect: false })
+// var client = SocketIO(process.env.VUE_APP_API, { autoConnect: false })
 
-Vue.use(new VueSocketIO({
-  debug: true,
-  connection: client,
-  vuex: {
-    store,
-    actionPrefix: "SOCKET_",
-    mutationPrefix: "SOCKET_"
-  }
-}))
+// Vue.use(new VueSocketIO({
+//   debug: true,
+//   connection: client,
+//   vuex: {
+//     store,
+//     actionPrefix: "SOCKET_",
+//     mutationPrefix: "SOCKET_"
+//   }
+// }))
 
 /* eslint-disable no-new */
 new Vue({

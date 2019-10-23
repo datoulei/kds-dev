@@ -37,7 +37,9 @@ export default {
       //   {id:0,tableName:'A1',createTime:201910202240,data:[{}]}
       // ]
       return arr.filter(item => {
-        const finish = item.data.filter(_item => !_item.isDone);
+        const finish = item.data.filter(
+          _item => !_item.isDone && !_item.isCancel
+        );
         if (finish.length !== 0) {
           return {
             item

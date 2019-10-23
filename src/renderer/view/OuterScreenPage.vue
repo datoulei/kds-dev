@@ -94,27 +94,6 @@ import db from '../../db';
 var connection = null;
 var timer;
 export default {
-  // sockets: {
-  //   // 新菜
-  //   'create-order'(data) {
-  //     console.log('推送菜品 => ', data);
-  //   },
-  //   // 撤单
-  //   'return-order'(data) {
-  //     console.log('取消菜品 => ', data);
-  //   },
-  //   'done-dish-confirm'(data) {
-  //     if (data.code === 0) {
-  //       this.$message.success('划菜成功', 0.5);
-  //     }
-  //   },
-  //   'undo-dish-confirm'(data) {
-  //     if (data.code === 0) {
-  //       this.$message.success('撤销成功', 0.5);
-  //     }
-  //   }
-  // },
-
   data() {
     return {
       overTime: {}, // 超时数据
@@ -133,27 +112,29 @@ export default {
     // mysql
     this.connectMysql();
     // 初始化
-    //db.set('orderList', []).write();
-    //db.set('queryTime', null).write();
-    const list = db.get('orderList').value();
-    if (!list) {
-      this.$store.dispatch('pushOrderList', []);
-    } else {
-      this.$store.dispatch('pushOrderList', list);
-    }
+    db.set('orderList', []).write();
+    db.set('queryTime', null).write();
 
-    ipcRenderer.send('complete', [], '', 'outer');
+    // 读取本地存储的数据
+    this.readLocalOrderList();
 
+    // 查询数据库新增订单
     this.queryOrder();
+
+    // 定时读取新增订单
     setInterval(() => {
       this.queryOrder();
     }, 10000);
 
+    // 定时上传已完成的订单,5秒后上传退单的数据
     setInterval(() => {
       this.uploadOrder();
+      setTimeout(() => {
+        this.cancelRemoteOrder();
+      }, 5000);
     }, 60000);
 
-    // 超时时间
+    // 获取超时配置信息
     this.GetOverTime().then(rst => {
       this.overTime = rst;
       ipcRenderer.send('complete', '', rst, '_outer');
@@ -254,28 +235,58 @@ export default {
       'setDishes',
       'setUploadList',
       'rmUploadList',
-      'clearUploadList'
+      'clearUploadList',
+      'updateOrderList'
     ]),
+    // 读取本地存储的数据
+    readLocalOrderList() {
+      const list = db.get('orderList').value();
+      if (!list) {
+        this.$store.dispatch('pushOrderList', []);
+      } else {
+        this.$store.dispatch('pushOrderList', list);
+      }
+    },
 
+    // 查询哗啦啦订单
     queryOrder() {
       this.GetOrderList().then(newOrders => {
         var temp = [];
         newOrders.map(order => {
-          for (var i = 0; i < order.foodNumber; i++) {
-            temp.push({
-              key: v4(),
-              isDone: false,
-              finishTime: null,
-              ...order
-            });
+          if (order.foodCancel > 0) {
+            for (var i = 0; i < order.foodCancelNumber; i++) {
+              temp.push({
+                key: v4(),
+                isDone: false,
+                isCancel: true,
+                finishTime: null,
+                ...order
+              });
+            }
+          } else {
+            for (var i = 0; i < order.foodNumber; i++) {
+              temp.push({
+                key: v4(),
+                isDone: false,
+                isCancel: false,
+                finishTime: null,
+                ...order
+              });
+            }
           }
         });
         this.$store.dispatch('pushOrderList', temp);
-        ipcRenderer.send('orderList');
-        // 就绪
       });
+
+      // 退单
+      setTimeout(() => {
+        this.getCancelOrderList().then(rst => {
+          this.updateOrderList(rst);
+        });
+      }, 2000);
     },
 
+    // 构建订单列表格式
     build(orders, currentCategory, sort) {
       const order = orders.filter(item => {
         if (currentCategory === 0) {
@@ -294,6 +305,7 @@ export default {
       });
     },
 
+    // 划菜、撤销划菜
     doneDish(data) {
       console.log('划菜：', data.foodName);
       if (!data.isDone) {
@@ -388,13 +400,13 @@ export default {
       });
     },
 
-    //=======================================================================
     // 超时处理
     async GetOverTime() {
       try {
         return await this.$http.get('/setting/overtime');
       } catch (error) {}
     },
+
     // 获取分类
     async GetCategory() {
       try {
@@ -417,20 +429,19 @@ export default {
     async GetOrderList() {
       return new Promise((resolve, reject) => {
         const queryTime = db.get('queryTime').value();
-
         let sql = '';
         if (!queryTime) {
           //第一次启动，查询四个小时前
           const date = dayjs()
-            .subtract(24, 'hour')
+            .subtract(5, 'hour')
             .format('YYYYMMDDHHmmss');
           sql =
-            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
+            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
             date;
         } else {
           // 查询上一次执行后的时间段
           sql =
-            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime from tbl_mendian_order_food where orderStatus=40 and createTime >= ' +
+            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where orderStatus=40 and createTime >= ' +
             queryTime;
         }
 
@@ -441,13 +452,43 @@ export default {
             console.log('dishes查询错误：', err.fatal);
           } else {
             console.log('查询成功...');
-            console.log(rows);
             resolve(rows);
           }
         });
       });
     },
 
+    // 查询撤销订单
+    async getCancelOrderList() {
+      return new Promise((resolve, reject) => {
+        const date = dayjs()
+          .subtract(2, 'hour')
+          .format('YYYYMMDDHHmmss');
+        const sql =
+          'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where cancelTime >= ' +
+          date;
+
+        connection.query(sql, function(err, rows, fields) {
+          if (err) {
+            console.log('撤销订单查询错误：', err.fatal);
+          } else {
+            console.log('撤销查询成功...');
+            resolve(rows);
+          }
+        });
+      });
+    },
+
+    async cancelRemoteOrder() {
+      const cancelOrderList = await this.getCancelOrderList();
+      try {
+        await this.$http.post('/order/cancel', {
+          list: cancelOrderList
+        });
+      } catch (error) {}
+    },
+
+    // 往待上传的订单列表中添加数据
     addUploadOrderList(data) {
       const orderList = this.getOrderList;
       const orders = orderList.filter(item => item.orderKey === data.orderKey);
@@ -457,6 +498,7 @@ export default {
       }
     },
 
+    // 推送已完成的订单
     async uploadOrder() {
       const orderList = this.$store.state.order.uploadOrderList;
 
@@ -473,6 +515,8 @@ export default {
         console.log(error);
       }
     },
+
+    // 撤销划菜取消远程完成的订单
     async cancelUploadOrder(data) {
       try {
         const rst = await this.$http.post('/order/undo', {
@@ -484,6 +528,8 @@ export default {
     }
   },
   mounted() {
+    ipcRenderer.send('complete', [], '', 'outer');
+
     let self = this;
     this.$nextTick(() => {
       document.addEventListener('keyup', e => {
