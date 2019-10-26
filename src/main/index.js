@@ -149,15 +149,12 @@ ipcMain.on('orderList', (event, data) => {
 // 在连个屏幕加载完成的情况下发送订单数据
 ipcMain.on("complete", (event, _orderList, _overTime, screenType) => {
 
-  if (screenType === 'outer') {
-    orderList = _orderList;
-    outer = true;
-  }
   if (screenType === 'inner') {
     inner = true;
   }
 
-  if (screenType === '_outer') {
+  if (screenType === 'outer') {
+    orderList = _orderList;
     overTime = _overTime;
     outer = true;
   }

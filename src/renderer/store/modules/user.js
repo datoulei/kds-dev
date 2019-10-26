@@ -21,6 +21,8 @@ const state = {
 
   overTime: {},
 
+  dbInfo: {},
+
 };
 
 const getters = {
@@ -31,6 +33,7 @@ const getters = {
   card1Height: state => state.card1Height,
   card23Height: state => state.card23Height,
   full: state => state.full,
+  dbInfo: state => state.dbInfo
 
 };
 
@@ -57,6 +60,10 @@ const mutations = {
   },
   SET_OVERTIME(state, overTime) {
     state.overTime = overTime
+  },
+
+  SET_DATABASE(state, dbInfo) {
+    state.db = dbInfo
   }
 };
 
@@ -64,6 +71,11 @@ const actions = {
   async GetUserInfo({ commit }) {
     const UserInfo = await Vue.http.get('/users/me');
     commit('SET_USER_INFO', UserInfo);
+  },
+
+  async GetDataBaseInfo({ commit }) {
+    //const dbInfo = await Vue.http.get('/users/me');
+    //commit('SET_DATABASE', UserInfo);
   },
 };
 

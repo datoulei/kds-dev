@@ -144,12 +144,22 @@ const mutations = {
   },
 
   PUSH_ORDER_LIST(state, newOrders) {
-    const orderList = state.orderList;
-    state.orderList = [...orderList, ...newOrders];
+    const orderList = Object.assign([], state.orderList);
 
-    // 持久化
-    db.set('orderList', [...orderList, ...newOrders]).write();
-    ipcRenderer.send('orderList', [...orderList, ...newOrders]);
+    // 最多记录1000调
+    newOrders.map(order => {
+      if (orderList.length >= 1000) {
+        orderList.shift(); //删除第一个，
+        orderList.push(order);  // 添加
+      } else {
+        orderList.push(order);
+      }
+    })
+
+    state.orderList = orderList;
+    // 持久化[...
+    db.set('orderList', orderList).write();
+    ipcRenderer.send('orderList', orderList);
   },
 
 

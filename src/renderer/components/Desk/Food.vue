@@ -155,7 +155,7 @@ export default {
   }
   .desc {
     display: flex;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
     color: rgba(25, 27, 31, 1);
   }

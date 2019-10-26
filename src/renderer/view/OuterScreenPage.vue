@@ -112,8 +112,8 @@ export default {
     // mysql
     this.connectMysql();
     // 初始化
-    db.set('orderList', []).write();
-    db.set('queryTime', null).write();
+    //db.set('orderList', []).write();
+    //db.set('queryTime', null).write();
 
     // 读取本地存储的数据
     this.readLocalOrderList();
@@ -137,7 +137,7 @@ export default {
     // 获取超时配置信息
     this.GetOverTime().then(rst => {
       this.overTime = rst;
-      ipcRenderer.send('complete', '', rst, '_outer');
+      ipcRenderer.send('complete', [], rst, 'outer');
     });
 
     // 获取分类
@@ -377,23 +377,18 @@ export default {
     },
 
     // 连接mysql
-    connectMysql() {
+    async connectMysql() {
+      const config = await this.getConfig();
       connection = mysql.createConnection({
-        host: 'localhost',
-        port: '3306',
-        user: 'q_user',
-        password: 'q_user',
+        host: config.host,
+        port: config.port,
+        user: config.user,
+        password: config.password,
         database: 'db_mendian'
       });
       connection.connect(err => {
         if (err) {
-          console.log(
-            '数据库连接失败!',
-            'connect mysql error code:',
-            err.code,
-            'connect mysql error message:',
-            err.fatal
-          );
+          this.$message.error('数据库连接失败,error code:' + err.code, 60);
         } else {
           console.log('db连接成功...');
         }
@@ -433,7 +428,7 @@ export default {
         if (!queryTime) {
           //第一次启动，查询四个小时前
           const date = dayjs()
-            .subtract(5, 'hour')
+            .subtract(50, 'hour')
             .format('YYYYMMDDHHmmss');
           sql =
             'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
@@ -481,6 +476,9 @@ export default {
 
     async cancelRemoteOrder() {
       const cancelOrderList = await this.getCancelOrderList();
+      if (cancelOrderList.length === 0) {
+        return;
+      }
       try {
         await this.$http.post('/order/cancel', {
           list: cancelOrderList
@@ -525,11 +523,32 @@ export default {
       } catch (error) {
         console.log(error);
       }
+    },
+
+    async getConfig() {
+      try {
+        const rst = await this.$http.get('/config');
+        if (!rst) {
+          return {
+            ip: '127.0.0.1',
+            port: '3306',
+            username: 'q_user',
+            password: 'q_user'
+          };
+        } else {
+          return rst;
+        }
+      } catch (error) {
+        return {
+          host: '127.0.0.1',
+          port: '3306',
+          user: 'q_user',
+          password: 'q_user'
+        };
+      }
     }
   },
   mounted() {
-    ipcRenderer.send('complete', [], '', 'outer');
-
     let self = this;
     this.$nextTick(() => {
       document.addEventListener('keyup', e => {
