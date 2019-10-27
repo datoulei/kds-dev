@@ -110,45 +110,48 @@ export default {
   },
   created() {
     // mysql
-    this.connectMysql();
+    this.connectMysql().then(rst => {
+      console.log(rst);
+      if (rst) {
+        // 读取本地存储的数据
+        this.readLocalOrderList();
+
+        // 查询数据库新增订单
+        this.queryOrder();
+
+        // 定时读取新增订单
+        setInterval(() => {
+          this.queryOrder();
+        }, 10000);
+
+        // 定时上传已完成的订单,5秒后上传退单的数据
+        setInterval(() => {
+          this.uploadOrder();
+          setTimeout(() => {
+            this.cancelRemoteOrder();
+          }, 5000);
+        }, 60000);
+
+        // 获取超时配置信息
+        this.GetOverTime().then(rst => {
+          this.overTime = rst;
+          ipcRenderer.send('complete', [], rst, 'outer');
+        });
+
+        // 获取分类
+        this.GetCategory().then(categories => {
+          this.setCategories(categories);
+        });
+
+        // 获取菜品
+        this.GetDishes().then(dishes => {
+          this.setDishes(dishes);
+        });
+      }
+    });
     // 初始化
     //db.set('orderList', []).write();
     //db.set('queryTime', null).write();
-
-    // 读取本地存储的数据
-    this.readLocalOrderList();
-
-    // 查询数据库新增订单
-    this.queryOrder();
-
-    // 定时读取新增订单
-    setInterval(() => {
-      this.queryOrder();
-    }, 10000);
-
-    // 定时上传已完成的订单,5秒后上传退单的数据
-    setInterval(() => {
-      this.uploadOrder();
-      setTimeout(() => {
-        this.cancelRemoteOrder();
-      }, 5000);
-    }, 60000);
-
-    // 获取超时配置信息
-    this.GetOverTime().then(rst => {
-      this.overTime = rst;
-      ipcRenderer.send('complete', [], rst, 'outer');
-    });
-
-    // 获取分类
-    this.GetCategory().then(categories => {
-      this.setCategories(categories);
-    });
-
-    // 获取菜品
-    this.GetDishes().then(dishes => {
-      this.setDishes(dishes);
-    });
   },
   beforeDestroy() {},
   computed: {
@@ -379,19 +382,24 @@ export default {
     // 连接mysql
     async connectMysql() {
       const config = await this.getConfig();
-      connection = mysql.createConnection({
-        host: config.host,
-        port: config.port,
-        user: config.user,
-        password: config.password,
-        database: 'db_mendian'
-      });
-      connection.connect(err => {
-        if (err) {
-          this.$message.error('数据库连接失败,error code:' + err.code, 60);
-        } else {
-          console.log('db连接成功...');
-        }
+      return new Promise((resolve, reject) => {
+        connection = mysql.createConnection({
+          host: config.host,
+          port: `${config.port}`,
+          user: config.username,
+          password: config.password,
+          database: 'db_mendian'
+        });
+
+        connection.connect(err => {
+          if (err) {
+            this.$message.error('数据库连接失败,error code:' + err.code, 60);
+            resolve(false);
+          } else {
+            console.log('db连接成功...');
+            resolve(true);
+          }
+        });
       });
     },
 
@@ -428,7 +436,7 @@ export default {
         if (!queryTime) {
           //第一次启动，查询四个小时前
           const date = dayjs()
-            .subtract(50, 'hour')
+            .subtract(5, 'hour')
             .format('YYYYMMDDHHmmss');
           sql =
             'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
@@ -527,10 +535,10 @@ export default {
 
     async getConfig() {
       try {
-        const rst = await this.$http.get('/config');
+        const rst = await this.$http.get('/setting/config');
         if (!rst) {
           return {
-            ip: '127.0.0.1',
+            host: '127.0.0.1',
             port: '3306',
             username: 'q_user',
             password: 'q_user'
@@ -542,7 +550,7 @@ export default {
         return {
           host: '127.0.0.1',
           port: '3306',
-          user: 'q_user',
+          username: 'q_user',
           password: 'q_user'
         };
       }

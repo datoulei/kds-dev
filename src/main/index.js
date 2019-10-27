@@ -60,21 +60,21 @@ function createInnerWindow() {
     innerWindow.loadURL(innerURL);
   } else {
     // 此处应该删除
-    innerWindow = new BrowserWindow({
-      x: 0,
-      y: 0,
-      height: 500,
-      width: 1000,
-      useContentSize: true,
-      frame: false,
-      resizable: true,
-      fullscreen: true,
-      webPreferences: {
-        nodeIntegration: true,
-        webviewTag: true,
-      }
-    });
-    innerWindow.loadURL(innerURL);
+    // innerWindow = new BrowserWindow({
+    //   x: 0,
+    //   y: 0,
+    //   height: 500,
+    //   width: 1000,
+    //   useContentSize: true,
+    //   frame: false,
+    //   resizable: true,
+    //   fullscreen: true,
+    //   webPreferences: {
+    //     nodeIntegration: true,
+    //     webviewTag: true,
+    //   }
+    // });
+    // innerWindow.loadURL(innerURL);
   }
 
 
