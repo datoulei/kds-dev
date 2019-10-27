@@ -109,9 +109,11 @@ export default {
     'v-food': Food
   },
   created() {
+    // 初始化
+    db.set('orderList', []).write();
+    db.set('queryTime', null).write();
     // mysql
     this.connectMysql().then(rst => {
-      console.log(rst);
       if (rst) {
         // 读取本地存储的数据
         this.readLocalOrderList();
@@ -149,9 +151,6 @@ export default {
         });
       }
     });
-    // 初始化
-    //db.set('orderList', []).write();
-    //db.set('queryTime', null).write();
   },
   beforeDestroy() {},
   computed: {
@@ -439,12 +438,16 @@ export default {
             .subtract(5, 'hour')
             .format('YYYYMMDDHHmmss');
           sql =
-            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where orderStatus=40 and  createTime >=' +
+            'SELECT f.orderKey,f.orderStatus,f.orderSubType,f.tableName,f.foodName,f.foodKey,f.foodNumber,f.foodCancelNumber,f.unit,f.cancelTime,f.itemKey,p.createTime ' +
+            'FROM tbl_mendian_order_food f LEFT JOIN	tbl_mendian_order_pay p ON f.orderKey = p.orderKey ' +
+            'WHEREf.orderStatus = 40 AND p.createTime >= ' +
             date;
         } else {
           // 查询上一次执行后的时间段
           sql =
-            'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where orderStatus=40 and createTime >= ' +
+            'SELECT f.orderKey,f.orderStatus,f.orderSubType,f.tableName,f.foodName,f.foodKey,f.foodNumber,f.foodCancelNumber,f.unit,f.cancelTime,f.itemKey,p.createTime ' +
+            'FROM tbl_mendian_order_food f LEFT JOIN	tbl_mendian_order_pay p ON f.orderKey = p.orderKey ' +
+            'WHEREf.orderStatus = 40 AND p.createTime >= ' +
             queryTime;
         }
 
