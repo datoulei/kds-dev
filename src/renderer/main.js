@@ -1,6 +1,5 @@
 import Vue from 'vue';
 
-
 import App from './App';
 import router from './router';
 import store from './store';
@@ -11,8 +10,8 @@ import 'ant-design-vue/dist/antd.less';
 import VueStorage from 'vue-ls';
 import http from '@/plugin/$http';
 import db from '../db';
-import VueSocketIO from 'vue-socket.io'
-import SocketIO from 'socket.io-client'
+import VueSocketIO from 'vue-socket.io';
+import SocketIO from 'socket.io-client';
 
 Vue.use(Antd);
 Vue.use(http);
@@ -25,17 +24,19 @@ Vue.db = Vue.prototype.$db = db;
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'));
 Vue.config.productionTip = false;
 
-var client = SocketIO(process.env.VUE_APP_API, { autoConnect: false })
+var client = SocketIO(process.env.VUE_APP_API, { autoConnect: false });
 
-Vue.use(new VueSocketIO({
-  debug: true,
-  connection: client,
-  vuex: {
-    store,
-    actionPrefix: "SOCKET_",
-    mutationPrefix: "SOCKET_"
-  }
-}))
+Vue.use(
+  new VueSocketIO({
+    debug: true,
+    connection: client,
+    vuex: {
+      store,
+      actionPrefix: 'SOCKET_',
+      mutationPrefix: 'SOCKET_'
+    }
+  })
+);
 
 /* eslint-disable no-new */
 new Vue({
@@ -44,3 +45,9 @@ new Vue({
   store,
   template: '<App/>'
 }).$mount('#app');
+
+// 开启定时器
+setInterval(() => {
+  console.log('执行定时器');
+  store.dispatch('updateTime');
+}, 1000);

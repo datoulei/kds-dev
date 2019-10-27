@@ -19,7 +19,7 @@
 
 <script>
 import dayjs from 'dayjs';
-var timer;
+import { mapGetters } from 'vuex';
 export default {
   props: {
     food: { type: Object, required: true },
@@ -29,22 +29,20 @@ export default {
 
   data() {
     return {
-      diffTime: 0,
       halfTimeColor: '',
       fullTiemColor: '',
       color: '#FFF'
     };
   },
-  created() {
-    this.HandleTime();
-    timer = setInterval(() => {
-      this.HandleTime();
-    }, 1000);
-  },
-  beforeDestroy() {
-    clearInterval(timer);
-  },
   computed: {
+    ...mapGetters(['timer']),
+    diffTime() {
+      try {
+        return this.timer.diff(dayjs(this.food.createdAt), 'minute');
+      } catch (error) {
+        return 0;
+      }
+    },
     foodColor() {
       const temp = this.$store.state.user.overTime;
       if (this.diffTime >= temp.halfTime && this.diffTime <= temp.allTime) {
@@ -63,11 +61,6 @@ export default {
       } else {
         return 'normal';
       }
-    }
-  },
-  methods: {
-    HandleTime() {
-      this.diffTime = dayjs().diff(dayjs(this.food.createdAt), 'minute');
     }
   }
 };

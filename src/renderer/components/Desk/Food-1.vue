@@ -17,9 +17,8 @@
 </template>
 
 <script>
-import moment from 'moment';
 import dayjs from 'dayjs';
-let timer;
+import { mapGetters } from 'vuex';
 export default {
   props: {
     food: { type: Object, required: true },
@@ -31,20 +30,18 @@ export default {
 
   data() {
     return {
-      time: 0,
       color: '#FFF'
     };
   },
-  created() {
-    this.HandleTime();
-    timer = setInterval(() => {
-      this.HandleTime();
-    }, 1000);
-  },
-  beforeDestroy() {
-    clearInterval(timer);
-  },
   computed: {
+    ...mapGetters(['timer']),
+    time() {
+      try {
+        return this.timer.diff(dayjs(this.food.createdAt), 'minute');
+      } catch (error) {
+        return 0;
+      }
+    },
     foodColor() {
       if (
         this.time >= this.overTime.halfTime &&
@@ -56,13 +53,6 @@ export default {
         this.color = this.overTime.allColor;
         return `full-time`;
       }
-    }
-  },
-
-  methods: {
-    moment,
-    HandleTime() {
-      this.time = dayjs().diff(dayjs(this.food.createdAt), 'minute');
     }
   }
 };
