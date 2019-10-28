@@ -19,7 +19,6 @@
             :key="foo.id"
             :food="foo"
             :width="width"
-            :overTime="overTime"
             :showRemark="showRemark"
             @click.native="doneDish(foo)"
           />
@@ -47,7 +46,6 @@
             :key="foo.id"
             :food="foo"
             :width="width"
-            :overTime="overTime"
             :showRemark="showRemark"
             @click.native="doneDish(foo)"
           />
@@ -72,7 +70,6 @@
             :key="foo.id"
             :food="foo"
             :width="width"
-            :overTime="overTime"
             :showRemark="showRemark"
             @click.native="doneDish(foo)"
           />
@@ -96,7 +93,6 @@ var timer;
 export default {
   data() {
     return {
-      overTime: {}, // 超时数据
       currentCategory1: 0,
       currentCategory2: 0,
       currentCategory3: 0,
@@ -109,9 +105,13 @@ export default {
     'v-food': Food
   },
   created() {
-    // 初始化
-    db.set('orderList', []).write();
-    db.set('queryTime', null).write();
+    // 获取超时配置信息
+    this.getOverTime();
+
+    // 初始化(打包必须注释一下两行)
+    //db.set('orderList', []).write();
+    //db.set('queryTime', null).write();
+
     // mysql
     this.connectMysql().then(rst => {
       if (rst) {
@@ -134,12 +134,6 @@ export default {
           }, 5000);
         }, 60000);
 
-        // 获取超时配置信息
-        this.GetOverTime().then(rst => {
-          this.overTime = rst;
-          ipcRenderer.send('complete', [], rst, 'outer');
-        });
-
         // 获取分类
         this.GetCategory().then(categories => {
           this.setCategories(categories);
@@ -158,7 +152,8 @@ export default {
     // 小卡片的宽
     width() {
       const width = (window.screen.width - 36) / 2;
-      return Math.ceil((width - 48) / 5);
+      return Math.ceil((width - 42) / 4);
+      // return Math.ceil((width - 48) / 5);
     },
     // 区域2/3
     card23Height() {
@@ -238,7 +233,8 @@ export default {
       'setUploadList',
       'rmUploadList',
       'clearUploadList',
-      'updateOrderList'
+      'updateOrderList',
+      'getOverTime'
     ]),
     // 读取本地存储的数据
     readLocalOrderList() {
@@ -402,13 +398,6 @@ export default {
       });
     },
 
-    // 超时处理
-    async GetOverTime() {
-      try {
-        return await this.$http.get('/setting/overtime');
-      } catch (error) {}
-    },
-
     // 获取分类
     async GetCategory() {
       try {
@@ -435,19 +424,19 @@ export default {
         if (!queryTime) {
           //第一次启动，查询四个小时前
           const date = dayjs()
-            .subtract(5, 'hour')
+            .subtract(4, 'hour')
             .format('YYYYMMDDHHmmss');
           sql =
             'SELECT f.orderKey,f.orderStatus,f.orderSubType,f.tableName,f.foodName,f.foodKey,f.foodNumber,f.foodCancelNumber,f.unit,f.cancelTime,f.itemKey,p.createTime ' +
             'FROM tbl_mendian_order_food f LEFT JOIN	tbl_mendian_order_pay p ON f.orderKey = p.orderKey ' +
-            'WHEREf.orderStatus = 40 AND p.createTime >= ' +
+            'WHERE f.orderStatus = 40 AND p.createTime >= ' +
             date;
         } else {
           // 查询上一次执行后的时间段
           sql =
             'SELECT f.orderKey,f.orderStatus,f.orderSubType,f.tableName,f.foodName,f.foodKey,f.foodNumber,f.foodCancelNumber,f.unit,f.cancelTime,f.itemKey,p.createTime ' +
             'FROM tbl_mendian_order_food f LEFT JOIN	tbl_mendian_order_pay p ON f.orderKey = p.orderKey ' +
-            'WHEREf.orderStatus = 40 AND p.createTime >= ' +
+            'WHERE f.orderStatus = 40 AND p.createTime >= ' +
             queryTime;
         }
 
@@ -471,7 +460,9 @@ export default {
           .subtract(2, 'hour')
           .format('YYYYMMDDHHmmss');
         const sql =
-          'select orderKey, orderStatus,orderSubType,tableName,foodName,foodKey,foodNumber,foodCancelNumber,unit,createTime,cancelTime,itemKey from tbl_mendian_order_food where cancelTime >= ' +
+          'SELECT f.orderKey,f.orderStatus,f.orderSubType,f.tableName,f.foodName,f.foodKey,f.foodNumber,f.foodCancelNumber,f.unit,f.cancelTime,f.itemKey,p.createTime ' +
+          'FROM tbl_mendian_order_food f LEFT JOIN	tbl_mendian_order_pay p ON f.orderKey = p.orderKey ' +
+          'WHERE f.cancelTime >= ' +
           date;
 
         connection.query(sql, function(err, rows, fields) {

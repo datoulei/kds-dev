@@ -1,7 +1,7 @@
 <template>
   <div
     :class="['food-card',foodColor] "
-    :style="{'width':width+'px',height:height+'px', 'background-color': color}"
+    :style="{'width':width+'px',height:height+'px', 'background-color': bgcolor}"
   >
     <div class="row">
       <div :class="['name',line]">
@@ -21,6 +21,7 @@
 <script>
 import dayjs from 'dayjs';
 import { mapGetters } from 'vuex';
+
 export default {
   props: {
     food: { type: Object, required: true },
@@ -29,14 +30,11 @@ export default {
   },
 
   data() {
-    return {
-      halfTimeColor: '',
-      fullTiemColor: '',
-      color: '#FFF'
-    };
+    return {};
   },
+  created() {},
   computed: {
-    ...mapGetters(['currentTime']),
+    ...mapGetters(['currentTime', 'overTime']),
     diffTime() {
       try {
         return this.currentTime.diff(
@@ -48,18 +46,32 @@ export default {
       }
     },
     foodColor() {
-      let overTime = { halfTime: 10, allTime: 20 };
-      overTime = this.$store.state.user.overTime;
-      if (
-        this.diffTime >= overTime.halfTime &&
-        this.diffTime <= overTime.allTime
-      ) {
-        this.color = overTime.halfColor;
-        return `half-time`;
+      if (!this.overTime) {
+        return ' ';
       }
-      if (this.diffTime > overTime.allTime) {
-        this.color = overTime.allColor;
+      if (
+        this.diffTime >= this.overTime.halfTime &&
+        this.diffTime <= this.overTime.allTime
+      ) {
+        return `half-time`;
+      } else if (this.diffTime > this.overTime.allTime) {
         return `full-time`;
+      }
+    },
+
+    bgcolor() {
+      if (!this.overTime) {
+        return '#FFF';
+      }
+      if (
+        this.diffTime >= this.overTime.halfTime &&
+        this.diffTime < this.overTime.allTime
+      ) {
+        return this.overTime.halfColor;
+      } else if (this.diffTime >= this.overTime.allTime) {
+        return this.overTime.allColor;
+      } else {
+        return '#FFF';
       }
     },
 
@@ -74,13 +86,17 @@ export default {
         }
       }
     }
-  }
+  },
+
+  methods: {}
 };
 </script>
 
 <style lang="scss" scoped>
 .line {
   text-decoration: line-through;
+  text-decoration-style: double;
+  text-decoration-color: black;
 }
 .normal {
 }

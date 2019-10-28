@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import db from '../../../db';
 import { ipcRenderer } from 'electron';
+import Vue from 'vue';
 
 const state = {
 
@@ -17,8 +18,15 @@ const state = {
   uploadOrderList: [],
 
   // 当前时间
-  currentTime: dayjs()
+  currentTime: dayjs(),
 
+  // 超时时间
+  overTime: {
+    halfTime: 10,
+    allTime: 20,
+    halfColor: '#FFA90A',
+    allColor: '#FF2424'
+  },
 
 };
 
@@ -120,7 +128,10 @@ const getters = {
   getOrderList: state => state.orderList,
 
   // 当前时间
-  currentTime: state => state.currentTime
+  currentTime: state => state.currentTime,
+
+  //超时时间
+  overTime: state => state.overTime,
 };
 
 const mutations = {
@@ -149,17 +160,22 @@ const mutations = {
   },
 
   PUSH_ORDER_LIST(state, newOrders) {
-    const orderList = Object.assign([], state.orderList);
+    let orderList = Object.assign([], state.orderList);
 
     // 最多记录1000调
-    newOrders.map(order => {
-      if (orderList.length >= 1000) {
-        orderList.shift(); //删除第一个，
-        orderList.push(order);  // 添加
-      } else {
-        orderList.push(order);
-      }
-    })
+    // newOrders.map(order => {
+    //   if (orderList.length >= 1000) {
+    //     orderList.shift(); //删除第一个，
+    //      orderList.push(order);  // 添加
+    //   } else {
+    //     orderList.push(order);
+    //   }
+    // })
+    orderList = orderList.concat(...newOrders);
+
+    if (orderList.length >= 1000) {
+      orderList = orderList.splice(orderList.length - 1000);
+    }
 
     state.orderList = orderList;
     // 持久化[...
@@ -220,7 +236,11 @@ const mutations = {
 
   UPDATE_TIME(state) {
     state.currentTime = dayjs()
-  }
+  },
+
+  SET_OVERTIME(state, overTime) {
+    state.overTime = overTime
+  },
 };
 
 const actions = {
@@ -258,6 +278,11 @@ const actions = {
 
   updateTime({ commit }) {
     commit('UPDATE_TIME')
+  },
+
+  async getOverTime({ commit }) {
+    const overTime = await Vue.http.get('/setting/overtime');
+    commit('SET_OVERTIME', overTime);
   }
 };
 

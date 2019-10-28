@@ -7,6 +7,7 @@
 import Desk from '@/components/Desk/Desk.vue';
 import { ipcRenderer } from 'electron';
 import _ from 'lodash';
+import { mapActions } from 'vuex';
 export default {
   data() {
     return {
@@ -16,12 +17,15 @@ export default {
   components: {
     'v-desk': Desk
   },
-  created() {},
+  created() {
+    this.getOverTime();
+  },
   beforeDestroy() {
     ipcRenderer.removeAllListeners('getOrderList');
   },
   computed: {},
   methods: {
+    ...mapActions(['getOverTime']),
     formatData(dishes) {
       const temp = _.groupBy(dishes, 'orderKey');
       const arr = [];
@@ -54,10 +58,6 @@ export default {
         this.orderList = this.formatData(data);
       }
     });
-    ipcRenderer.on('getOverTime', (event, data) => {
-      this.$store.commit('SET_OVERTIME', data);
-    });
-    ipcRenderer.send('complete', '', '', 'inner');
   }
 };
 </script>

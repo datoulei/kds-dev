@@ -1,6 +1,6 @@
 {
   "name": "kds-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "",
   "description": "An electron-vue project",
   "license": null,
@@ -19,7 +19,11 @@
   },
   "build": {
     "productName": "KDS后厨系统",
-    "appId": "com.uniecloud.desktop",
+    "appId": "com.kds.desktop",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "directories": {
       "output": "build"
     },

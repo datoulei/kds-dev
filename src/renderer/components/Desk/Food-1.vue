@@ -2,7 +2,7 @@
   <div class="wrapper">
     <div
       :class="['food-card',foodColor] "
-      :style="{'width':width+'px','height':height+'px','background-color':color}"
+      :style="{'width':width+'px','height':height+'px','background-color':bgcolor}"
     >
       <div class="header">
         <span class="order">{{ food.tableName }}</span>
@@ -24,17 +24,14 @@ export default {
     food: { type: Object, required: true },
     width: { type: Number, required: false },
     height: { type: Number, required: false },
-    overTime: { type: Object, required: true },
     showRemark: { type: Boolean, required: false }
   },
 
   data() {
-    return {
-      color: '#FFF'
-    };
+    return {};
   },
   computed: {
-    ...mapGetters(['currentTime']),
+    ...mapGetters(['currentTime', 'overTime']),
     time() {
       try {
         return this.currentTime.diff(
@@ -50,11 +47,24 @@ export default {
         this.time >= this.overTime.halfTime &&
         this.time < this.overTime.allTime
       ) {
-        this.color = this.overTime.halfColor;
         return `half-time`;
       } else if (this.time >= this.overTime.allTime) {
-        this.color = this.overTime.allColor;
         return `full-time`;
+      }
+    },
+    bgcolor() {
+      if (!this.overTime) {
+        return '#FFF';
+      }
+      if (
+        this.time >= this.overTime.halfTime &&
+        this.time < this.overTime.allTime
+      ) {
+        return this.overTime.halfColor;
+      } else if (this.time >= this.overTime.allTime) {
+        return this.overTime.allColor;
+      } else {
+        return '#FFF';
       }
     }
   }

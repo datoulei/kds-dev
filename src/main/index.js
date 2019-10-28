@@ -16,8 +16,7 @@ if (process.env.NODE_ENV !== 'development') {
 let loginWindow;
 let innerWindow;
 let outerWindow;
-let orderList;
-let overTime;
+
 let inner;
 let outer;
 
@@ -60,21 +59,21 @@ function createInnerWindow() {
     innerWindow.loadURL(innerURL);
   } else {
     // 此处应该删除
-    // innerWindow = new BrowserWindow({
-    //   x: 0,
-    //   y: 0,
-    //   height: 500,
-    //   width: 1000,
-    //   useContentSize: true,
-    //   frame: false,
-    //   resizable: true,
-    //   fullscreen: true,
-    //   webPreferences: {
-    //     nodeIntegration: true,
-    //     webviewTag: true,
-    //   }
-    // });
-    // innerWindow.loadURL(innerURL);
+    innerWindow = new BrowserWindow({
+      x: 0,
+      y: 0,
+      height: 500,
+      width: 1000,
+      useContentSize: true,
+      frame: false,
+      resizable: true,
+      fullscreen: true,
+      webPreferences: {
+        nodeIntegration: true,
+        webviewTag: true,
+      }
+    });
+    innerWindow.loadURL(innerURL);
   }
 
 
@@ -147,23 +146,16 @@ ipcMain.on('orderList', (event, data) => {
 
 // 监听两个屏幕是否加载完成
 // 在连个屏幕加载完成的情况下发送订单数据
-ipcMain.on("complete", (event, _orderList, _overTime, screenType) => {
+// ipcMain.on("complete", (event, screenType) => {
 
-  if (screenType === 'inner') {
-    inner = true;
-  }
+//   if (screenType === 'inner') {
+//     inner = true;
+//   }
 
-  if (screenType === 'outer') {
-    orderList = _orderList;
-    overTime = _overTime;
-    outer = true;
-  }
-
-  if (inner && outer) {
-    innerWindow.webContents.send('getOrderList', orderList);
-    innerWindow.webContents.send('getOverTime', overTime);
-  }
-})
+//   if (screenType === 'outer') {
+//     outer = true;
+//   }
+// })
 
 // 进程监听
 ipcMain.on('window', (event, data) => {
