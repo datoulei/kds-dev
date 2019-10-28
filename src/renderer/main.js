@@ -13,7 +13,8 @@ import http from '@/plugin/$http';
 import db from '../db';
 import VueSocketIO from 'vue-socket.io';
 import SocketIO from 'socket.io-client';
-
+// 定时器刷新间隔
+const timerInterval = 1000 * 30
 
 Vue.use(Antd);
 Vue.use(http);
@@ -46,5 +47,9 @@ new Vue({
   template: '<App/>'
 }).$mount('#app');
 
-
+// 开启定时器
+setInterval(() => {
+  console.log('执行定时器,刷新当前时间')
+  store.dispatch('updateTime')
+}, timerInterval);
 

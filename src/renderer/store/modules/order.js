@@ -16,6 +16,8 @@ const state = {
   // 待推送订单列表
   uploadOrderList: [],
 
+  // 当前时间
+  currentTime: dayjs()
 
 
 };
@@ -116,6 +118,9 @@ const getters = {
   },
 
   getOrderList: state => state.orderList,
+
+  // 当前时间
+  currentTime: state => state.currentTime
 };
 
 const mutations = {
@@ -211,6 +216,10 @@ const mutations = {
 
   CLEAR_UPLOAD_LIST(state) {
     state.uploadOrderList = [];
+  },
+
+  UPDATE_TIME(state) {
+    state.currentTime = dayjs()
   }
 };
 
@@ -245,6 +254,10 @@ const actions = {
 
   clearUploadList({ commit }) {
     commit('CLEAR_UPLOAD_LIST');
+  },
+
+  updateTime({ commit }) {
+    commit('UPDATE_TIME')
   }
 };
 
