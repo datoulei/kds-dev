@@ -153,8 +153,8 @@ const mutations = {
     });
     state.orderList = _orderList;
 
-    //持久化
-    db.set('orderList', _orderList).write();
+    //在主进程中持久化
+    ipcRenderer.send('write2db', 'orderList', _orderList);
     ipcRenderer.send('orderList', _orderList);
 
   },
@@ -178,8 +178,8 @@ const mutations = {
     }
 
     state.orderList = orderList;
-    // 持久化[...
-    db.set('orderList', orderList).write();
+    //在主进程中持久化
+    ipcRenderer.send('write2db', 'orderList', orderList)
     ipcRenderer.send('orderList', orderList);
   },
 
@@ -198,7 +198,7 @@ const mutations = {
       return order
     })
 
-    db.set('orderList', newOrderList).write();
+    ipcRenderer.send('write2db', 'orderList', newOrderList);
     ipcRenderer.send('orderList', newOrderList);
   },
 
@@ -214,7 +214,7 @@ const mutations = {
     const temp = state.uploadOrderList;
     state.uploadOrderList = [...temp, ...uploadList];
     // 持久化
-    db.set('uploadList', [...temp, ...uploadList]).write();
+    ipcRenderer.send('write2db', 'uploadList', [...temp, ...uploadList])
   },
 
   RM_UPLOAD_LIST(state, dish) {
@@ -226,7 +226,7 @@ const mutations = {
     });
     state.uploadOrderList = _uploadList;
     // 持久化
-    db.set('uploadList', _uploadList).write();
+    ipcRenderer.send('write2db', 'uploadList', _uploadList);
   },
 
 

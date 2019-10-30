@@ -5,7 +5,7 @@
       :style="{'width':width+'px','height':height+'px','background-color':bgcolor}"
     >
       <div class="header">
-        <span class="order">{{ food.tableName }}</span>
+        <span :class="['order',meituan]">{{ food.tableName }}</span>
         <span class="time">{{time}}分钟</span>
       </div>
       <div class="body">
@@ -32,6 +32,13 @@ export default {
   },
   computed: {
     ...mapGetters(['currentTime', 'overTime']),
+    meituan() {
+      if (this.food.orderSubType === 20) {
+        return `meituan`;
+      } else {
+        return '';
+      }
+    },
     time() {
       try {
         return this.currentTime.diff(
@@ -151,6 +158,9 @@ export default {
     font-weight: normal;
     color: #fff;
     flex: 1;
+    &.meituan {
+      font-size: 15px;
+    }
   }
   .time {
     color: #fff;

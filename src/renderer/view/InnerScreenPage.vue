@@ -34,6 +34,7 @@ export default {
           id: key,
           tableName: temp[key][0].tableName,
           createTime: temp[key][0].createTime,
+          orderSubType: temp[key][0].orderSubType,
           data: temp[key]
         });
       }

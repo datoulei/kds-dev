@@ -1,7 +1,7 @@
 <template>
   <div class="table-card" :style="{'height':tableHeight+'px','width':tableWidth+'px'}">
     <div class="header">
-      <span class="title">台号：{{food.tableName}}</span>
+      <span :class="['title',meituan]">台号：{{food.tableName}}</span>
       <span>{{ moment(food.createTime, 'YYYYMMDDHHmmss').format("HH:mm")}}</span>
     </div>
     <div class="body" :style="{height:bodyHeight+'px'}">
@@ -51,6 +51,13 @@ export default {
     'v-food': Food
   },
   computed: {
+    meituan() {
+      if (this.food.orderSubType === 20) {
+        return `meituan`;
+      } else {
+        return ' ';
+      }
+    },
     singleCardWidth() {
       return Math.round((window.screen.width - 12 * 8) / 6);
     },
@@ -92,6 +99,9 @@ export default {
   color: #fff;
   .title {
     flex: 1;
+    &.meituan {
+      font-size: 15px;
+    }
   }
 }
 .body {
