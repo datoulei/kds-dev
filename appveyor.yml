@@ -8,6 +8,10 @@ image: Visual Studio 2017
 platform:
   - x64
 
+environment:
+  GH_TOKEN:
+    secure: iV9pwoYYPE+tCNwM5PK3DSQJ6u0jXA5rw01wgarmaUcii1lb/x3QqTv6f+22P91J
+
 cache:
   - node_modules
   - '%APPDATA%\npm-cache'
@@ -24,6 +28,6 @@ install:
   - node --version
 
 build_script:
-  - yarn build
+  - yarn build:dist
 
 test: off
