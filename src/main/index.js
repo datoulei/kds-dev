@@ -33,50 +33,48 @@ const outerURL =
     ? `http://localhost:9080/#/outerScreen`
     : `file://${__dirname}/index.html#/outerScreen`;
 
-function createInnerWindow() {
+  function createInnerWindow() {
 
-  let displays = electron.screen.getAllDisplays()
-  let externalDisplay = displays.find((display) => {
-    return display.bounds.x !== 0 || display.bounds.y !== 0
-  })
-  // const { width, height } = externalDisplay
+    let displays = electron.screen.getAllDisplays()
+    let externalDisplay = displays.find((display) => {
+      return display.bounds.x !== 0 || display.bounds.y !== 0
+    })
+    // const { width, height } = externalDisplay
 
-  if (externalDisplay) {
-    innerWindow = new BrowserWindow({
-      x: externalDisplay.bounds.x,
-      y: externalDisplay.bounds.y,
-      height: 500,
-      width: 1000,
-      useContentSize: true,
-      frame: false,
-      resizable: true,
-      fullscreen: true,
-      webPreferences: {
-        nodeIntegration: true,
-        webviewTag: true,
-      }
-    });
-    innerWindow.loadURL(innerURL);
-  } else {
-    // 此处应该删除
-    //   innerWindow = new BrowserWindow({
-    //     x: 0,
-    //     y: 0,
-    //     height: 500,
-    //     width: 1000,
-    //     useContentSize: true,
-    //     frame: false,
-    //     resizable: true,
-    //     fullscreen: true,
-    //     webPreferences: {
-    //       nodeIntegration: true,
-    //       webviewTag: true,
-    //     }
-    //   });
-    //   innerWindow.loadURL(innerURL);
-    // }
-
-
+    if (externalDisplay) {
+      innerWindow = new BrowserWindow({
+        x: externalDisplay.bounds.x,
+        y: externalDisplay.bounds.y,
+        height: 500,
+        width: 1000,
+        useContentSize: true,
+        frame: false,
+        resizable: true,
+        fullscreen: true,
+        webPreferences: {
+          nodeIntegration: true,
+          webviewTag: true,
+        }
+      });
+      innerWindow.loadURL(innerURL);
+    } else {
+      // 此处应该删除
+      //   innerWindow = new BrowserWindow({
+      //     x: 0,
+      //     y: 0,
+      //     height: 500,
+      //     width: 1000,
+      //     useContentSize: true,
+      //     frame: false,
+      //     resizable: true,
+      //     fullscreen: true,
+      //     webPreferences: {
+      //       nodeIntegration: true,
+      //       webviewTag: true,
+      //     }
+      //   });
+      //   innerWindow.loadURL(innerURL);
+    }
   }
 
   function createOuterWindow() {
