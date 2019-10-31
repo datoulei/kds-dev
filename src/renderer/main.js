@@ -1,6 +1,5 @@
 import Vue from 'vue';
 
-
 import App from './App';
 import router from './router';
 import store from './store';
@@ -16,6 +15,7 @@ import SocketIO from 'socket.io-client';
 // 定时器刷新间隔
 const timerInterval = 1000 * 3
 
+
 Vue.use(Antd);
 Vue.use(http);
 Vue.use(VueStorage, {
@@ -26,6 +26,7 @@ Vue.use(VueStorage, {
 Vue.db = Vue.prototype.$db = db;
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'));
 Vue.config.productionTip = false;
+
 
 // var client = SocketIO(process.env.VUE_APP_API, { autoConnect: false })
 
@@ -38,6 +39,7 @@ Vue.config.productionTip = false;
 //     mutationPrefix: "SOCKET_"
 //   }
 // }))
+
 
 /* eslint-disable no-new */
 new Vue({
@@ -52,4 +54,3 @@ setInterval(() => {
   console.log('执行定时器,刷新当前时间')
   store.dispatch('updateTime')
 }, timerInterval);
-
