@@ -2,15 +2,15 @@
   <div class="wrapper">
     <div
       :class="['food-card',foodColor] "
-      :style="{'width':width+'px','height':height+'px','background-color':color}"
+      :style="{'width':width+'px','height':height+'px','background-color':bgcolor}"
     >
       <div class="header">
-        <span class="order">{{ food.tableName }}</span>
+        <span :class="['order',meituan]">{{ food.tableName }}</span>
         <span class="time">{{time}}分钟</span>
       </div>
       <div class="body">
         <div class="name">{{ food.foodName }}</div>
-        <div class="remark" v-if="showRemark===true">备注：{{ food.remark }}</div>
+        <div class="remark" v-if="showRemark===true">备注：{{ food.unit }}</div>
       </div>
     </div>
   </div>
@@ -24,20 +24,27 @@ export default {
     food: { type: Object, required: true },
     width: { type: Number, required: false },
     height: { type: Number, required: false },
-    overTime: { type: Object, required: true },
     showRemark: { type: Boolean, required: false }
   },
 
   data() {
-    return {
-      color: '#FFF'
-    };
+    return {};
   },
   computed: {
-    ...mapGetters(['timer']),
+    ...mapGetters(['currentTime', 'overTime']),
+    meituan() {
+      if (this.food.orderSubType === 20) {
+        return `meituan`;
+      } else {
+        return '';
+      }
+    },
     time() {
       try {
-        return this.timer.diff(dayjs(this.food.createdAt), 'minute');
+        return this.currentTime.diff(
+          dayjs(`${this.food.createTime}`, 'YYYYMMDDHHmmss'),
+          'minute'
+        );
       } catch (error) {
         return 0;
       }
@@ -47,11 +54,24 @@ export default {
         this.time >= this.overTime.halfTime &&
         this.time < this.overTime.allTime
       ) {
-        this.color = this.overTime.halfColor;
         return `half-time`;
       } else if (this.time >= this.overTime.allTime) {
-        this.color = this.overTime.allColor;
         return `full-time`;
+      }
+    },
+    bgcolor() {
+      if (!this.overTime) {
+        return '#FFF';
+      }
+      if (
+        this.time >= this.overTime.halfTime &&
+        this.time < this.overTime.allTime
+      ) {
+        return this.overTime.halfColor;
+      } else if (this.time >= this.overTime.allTime) {
+        return this.overTime.allColor;
+      } else {
+        return '#FFF';
       }
     }
   }
@@ -138,6 +158,9 @@ export default {
     font-weight: normal;
     color: #fff;
     flex: 1;
+    &.meituan {
+      font-size: 15px;
+    }
   }
   .time {
     color: #fff;

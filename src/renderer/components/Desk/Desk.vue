@@ -1,8 +1,8 @@
 <template>
   <div class="table-card" :style="{'height':tableHeight+'px','width':tableWidth+'px'}">
     <div class="header">
-      <span class="title">台号：{{food.tableName}}</span>
-      <span>{{ moment(food.createdAt).format("HH:mm")}}</span>
+      <span :class="['title',meituan]">台号：{{food.tableName}}</span>
+      <span>{{ moment(food.createTime, 'YYYYMMDDHHmmss').format("HH:mm")}}</span>
     </div>
     <div class="body" :style="{height:bodyHeight+'px'}">
       <v-food
@@ -28,7 +28,6 @@ export default {
   },
   data() {
     return {
-      tableWidth: 0, // 桌子宽度
       tableHeight: 0, // 桌子高度
       bodyHeight: 0, // 桌子body高度
       cardWidth: 0, // 小卡片宽度
@@ -37,14 +36,6 @@ export default {
   },
   created() {
     // 单个卡片的宽度
-    const singleCardWidth = Math.round((window.screen.width - 12 * 8) / 6);
-
-    // 计算桌子卡片宽度
-    if (this.food.data.length > 5) {
-      this.tableWidth = Math.ceil(this.food.data.length / 5) * singleCardWidth;
-    } else {
-      this.tableWidth = singleCardWidth;
-    }
 
     //计算桌子卡片高度
     this.tableHeight = Math.round((window.screen.height - 36) / 2);
@@ -52,14 +43,33 @@ export default {
     this.bodyHeight = this.tableHeight - 54;
 
     // 计算菜单小卡片宽高
-    this.cardWidth = singleCardWidth - 24;
+    this.cardWidth = this.singleCardWidth - 24;
 
     this.cardHeight = Math.round((this.bodyHeight - 12 * 6) / 5);
   },
   components: {
     'v-food': Food
   },
-  computed: {},
+  computed: {
+    meituan() {
+      if (this.food.orderSubType === 20) {
+        return `meituan`;
+      } else {
+        return ' ';
+      }
+    },
+    singleCardWidth() {
+      return Math.round((window.screen.width - 12 * 8) / 6);
+    },
+    tableWidth() {
+      // 计算桌子卡片宽度
+      if (this.food.data.length > 5) {
+        return Math.ceil(this.food.data.length / 5) * this.singleCardWidth;
+      } else {
+        return this.singleCardWidth;
+      }
+    }
+  },
   methods: {
     moment
   }
@@ -89,6 +99,9 @@ export default {
   color: #fff;
   .title {
     flex: 1;
+    &.meituan {
+      font-size: 15px;
+    }
   }
 }
 .body {

@@ -1,7 +1,7 @@
 <template>
   <div
     :class="['food-card',foodColor] "
-    :style="{'width':width+'px',height:height+'px', 'background-color': color}"
+    :style="{'width':width+'px',height:height+'px', 'background-color': bgcolor}"
   >
     <div class="row">
       <div :class="['name',line]">
@@ -11,8 +11,9 @@
       <div class="num">x1</div>
     </div>
     <div class="footer">
-      <span :class="['remark',line]">备注：{{ food.remark }}</span>
+      <span :class="['remark',line]">备注：{{ food.unit }}</span>
       <span v-if="food.isDone" class="desc">已划菜</span>
+      <span v-else-if="food.isCancel=== true" class="desc">已撤销</span>
     </div>
   </div>
 </template>
@@ -20,6 +21,7 @@
 <script>
 import dayjs from 'dayjs';
 import { mapGetters } from 'vuex';
+
 export default {
   props: {
     food: { type: Object, required: true },
@@ -28,30 +30,49 @@ export default {
   },
 
   data() {
-    return {
-      halfTimeColor: '',
-      fullTiemColor: '',
-      color: '#FFF'
-    };
+
+    return {};
   },
+  created() {},
   computed: {
-    ...mapGetters(['timer']),
+    ...mapGetters(['currentTime', 'overTime']),
     diffTime() {
       try {
-        return this.timer.diff(dayjs(this.food.createdAt), 'minute');
+        return this.currentTime.diff(
+          dayjs(`${this.food.createTime}`, 'YYYYMMDDHHmmss'),
+          'minute'
+        );
       } catch (error) {
         return 0;
       }
     },
     foodColor() {
-      const temp = this.$store.state.user.overTime;
-      if (this.diffTime >= temp.halfTime && this.diffTime <= temp.allTime) {
-        this.color = temp.halfColor;
-        return `half-time`;
+      if (!this.overTime) {
+        return ' ';
       }
-      if (this.diffTime > temp.allTime) {
-        this.color = temp.allColor;
+      if (
+        this.diffTime >= this.overTime.halfTime &&
+        this.diffTime <= this.overTime.allTime
+      ) {
+        return `half-time`;
+      } else if (this.diffTime > this.overTime.allTime) {
         return `full-time`;
+      }
+    },
+
+    bgcolor() {
+      if (!this.overTime) {
+        return '#FFF';
+      }
+      if (
+        this.diffTime >= this.overTime.halfTime &&
+        this.diffTime < this.overTime.allTime
+      ) {
+        return this.overTime.halfColor;
+      } else if (this.diffTime >= this.overTime.allTime) {
+        return this.overTime.allColor;
+      } else {
+        return '#FFF';
       }
     },
 
@@ -59,16 +80,25 @@ export default {
       if (this.food.isDone) {
         return 'line';
       } else {
-        return 'normal';
+        if (this.food.isCancel) {
+          return 'line';
+        } else {
+          return 'normal';
+        }
       }
     }
-  }
+  },
+
+  methods: {}
+
 };
 </script>
 
 <style lang="scss" scoped>
 .line {
   text-decoration: line-through;
+  text-decoration-style: double;
+  text-decoration-color: black;
 }
 .normal {
 }
@@ -139,7 +169,7 @@ export default {
   }
   .desc {
     display: flex;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
     color: rgba(25, 27, 31, 1);
   }

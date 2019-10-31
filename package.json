@@ -1,12 +1,13 @@
 {
   "name": "kds-desktop",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "author": "",
   "description": "An electron-vue project",
   "license": null,
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
+    "build:dist": "node .electron-vue/build.js && electron-builder --publish onTagOrDraft",
     "build:dir": "node .electron-vue/build.js && electron-builder --dir",
     "build:clean": "cross-env BUILD_TARGET=clean node .electron-vue/build.js",
     "build:web": "cross-env BUILD_TARGET=web node .electron-vue/build.js",
@@ -19,7 +20,11 @@
   },
   "build": {
     "productName": "KDS后厨系统",
-    "appId": "com.uniecloud.desktop",
+    "appId": "com.kds.desktop",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "directories": {
       "output": "build"
     },
@@ -61,6 +66,7 @@
     "lodash-id": "^0.14.0",
     "lowdb": "^1.0.0",
     "moment": "^2.24.0",
+    "mysql": "^2.17.1",
     "normalize.css": "^8.0.1",
     "reset-css": "^4.0.1",
     "socket.io-client": "^2.3.0",

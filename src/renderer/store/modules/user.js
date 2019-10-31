@@ -1,26 +1,36 @@
 import Vue from 'vue';
 
 const state = {
+  //用户信息
   info: null,
+
+  // 0：未划菜，1：划菜
   type: 0,
-  orderList: [],
+
+  // 是否显示备注
   remark: true,
-  overTime: {},
+
+  // 区域1高
   card1Height: 0,
+
+  // 区域23高
   card23Height: 0,
+
+  // 是否全屏
   full: false,
+
+  dbInfo: {},
+
 };
 
 const getters = {
+
   UserInfo: state => state.info,
   Type: state => state.type,
-  orderList: state => state.type,
   remark: state => state.remark,
-  overTime: state => state.overTime,
   card1Height: state => state.card1Height,
-  card1Height: state => state.card23Height,
+  card23Height: state => state.card23Height,
   full: state => state.full,
-
 };
 
 const mutations = {
@@ -30,15 +40,11 @@ const mutations = {
   SET_TYPE(state, type) {
     state.type = type;
   },
-  SET_ORDER_LIST(state, orderList) {
-    state.orderList = orderList
-  },
+
   SET_REMARK(state, remark) {
     state.remark = remark
   },
-  SET_OVERTIME(state, overTime) {
-    state.overTime = overTime
-  },
+
   SET_CARD1HEIGHT(state, height) {
     state.card1Height = height;
   },
@@ -47,7 +53,8 @@ const mutations = {
   },
   SET_FULL(state, full) {
     state.full = full
-  }
+  },
+
 };
 
 const actions = {
