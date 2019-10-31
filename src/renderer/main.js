@@ -13,7 +13,7 @@ import db from '../db';
 import VueSocketIO from 'vue-socket.io';
 import SocketIO from 'socket.io-client';
 // 定时器刷新间隔
-const timerInterval = 1000 * 3
+const timerInterval = 1000 * 60
 
 
 Vue.use(Antd);
