@@ -424,7 +424,7 @@ export default {
         if (!queryTime) {
           //第一次启动，查询四个小时前
           const date = dayjs()
-            .subtract(4, 'hour')
+            .subtract(30, 'minute')
             .format('YYYYMMDDHHmmss');
           sql =
             'SELECT f.orderKey,f.orderStatus,f.orderSubType,f.tableName,f.foodName,f.foodKey,f.foodNumber,f.foodCancelNumber,f.unit,f.cancelTime,f.itemKey,p.createTime ' +

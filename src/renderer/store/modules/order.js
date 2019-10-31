@@ -173,8 +173,8 @@ const mutations = {
     // })
     orderList = orderList.concat(...newOrders);
 
-    if (orderList.length >= 1000) {
-      orderList = orderList.splice(orderList.length - 1000);
+    if (orderList.length >= 200) {
+      orderList = orderList.splice(orderList.length - 200);
     }
 
     state.orderList = orderList;
